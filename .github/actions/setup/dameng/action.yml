@@ -1,8 +1,8 @@
-name: "dm"
-description: "setup dm"
+name: "dameng"
+description: "setup dameng"
 inputs:
     version:
-        description: "dm version"
+        description: "dameng version"
         required: false
         default: "dm8"
 
@@ -10,7 +10,7 @@ runs:
     using: "composite"
     steps:
         - if: runner.os == 'Linux' || runner.os == 'macOS'
-          name: Download and Install dm JDBC Driver
+          name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
               wget https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
@@ -23,7 +23,7 @@ runs:
               -Dfile=jdbc-20240918/DmJdbcDriver8.jar
 
         - if: runner.os == 'Windows'
-          name: Download and Install dm JDBC Driver
+          name: Download and Install dameng JDBC Driver
           shell: wsl
           run: |
               wsl wget https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
@@ -36,14 +36,14 @@ runs:
                 -Dfile=jdbc-20240918/DmJdbcDriver8.jar
 
         - if: runner.os == 'Linux' || runner.os == 'macOS'
-          name: Download dm Database Docker image and Load dm Database container
+          name: Download dameng Database Docker image and Load dameng Database container
           shell: bash
           run: |
               wget https://github.com/IGinX-THU/IGinX-resources/raw/refs/heads/main/resources/dm8_20241022_x86_rh6_64_single.tar
               docker load -i dm8_20241022_x86_rh6_64_single.tar
 
         - if: runner.os == 'Windows'
-          name: Download dm Database Docker image and Load dm Database container
+          name: Download dameng Database Docker image and Load dameng Database container
           shell: wsl
           run: |
               wsl wget https://github.com/IGinX-THU/IGinX-resources/raw/refs/heads/main/resources/dm8_20241022_x86_rh6_64_single.tar

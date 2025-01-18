@@ -1,19 +1,19 @@
-name: "dm"
-description: "stop, clean and start dm in order"
+name: "dameng"
+description: "stop, clean and start dameng in order"
 inputs:
     ports:
         description: The server port to listen on.
         default: "5236"
         required: false
     version:
-        description: dm db version.
+        description: dameng db version.
         default: "dm8"
         required: false
 runs:
     using: "composite"
     steps:
         - if: runner.os == 'Linux' || runner.os == 'macOS'
-          name: Run dm Database container
+          name: Run dameng Database container
           shell: bash
           run: |
               for port in ${{ inputs.ports }}; do
@@ -30,7 +30,7 @@ runs:
                   dm8_single:dm8_20241022_rev244896_x86_rh6_64
               done
         - if: runner.os == 'Linux' || runner.os == 'macOS'
-          name: Verify dm Database is running
+          name: Verify dameng Database is running
           id: dmContainer
           shell: bash
           run: |
@@ -50,7 +50,7 @@ runs:
                 done
               done
         - if: runner.os == 'Windows'
-          name: Run dm Database container
+          name: Run dameng Database container
           shell: wsl-run {0}
           run: |
               for port in ${{ inputs.ports }}; do
@@ -66,7 +66,7 @@ runs:
                   dm8_single:dm8_20241022_rev244896_x86_rh6_64
               done
         - if: runner.os == 'Windows'
-          name: Verify dm Database is running
+          name: Verify dameng Database is running
           id: dmContainerWin
           shell: wsl-run {0}
           run: |

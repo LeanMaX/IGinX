@@ -29,8 +29,8 @@ inputs:
         description: "Redis ports"
         required: false
         default: 6379
-    dm-ports:
-        description: "dm ports"
+    dameng-ports:
+        description: "dameng ports"
         required: false
         default: 5236
 
@@ -130,12 +130,12 @@ runs:
           with:
               ports: ${{ inputs.MySQL-ports }}
 
-        - if: inputs.DB-name=='dm'
+        - if: inputs.DB-name=='dameng'
           name: Setup DB
-          uses: ./.github/actions/setup/dm
+          uses: ./.github/actions/setup/dameng
 
-        - if: inputs.DB-name=='dm'
+        - if: inputs.DB-name=='dameng'
           name: Run DB
-          uses: ./.github/actions/service/dm
+          uses: ./.github/actions/service/dameng
           with:
-              ports: ${{ inputs.dm-ports }}
+              ports: ${{ inputs.dameng-ports }}
