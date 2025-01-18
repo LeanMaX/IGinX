@@ -122,18 +122,15 @@ public class RelationQueryRowStream implements RowStream {
       Set<String> columnNameSet = new HashSet<>(); // 用于检查该resultSet中是否有同名的column
 
       int cnt = 0;
-      String tableName = "";
-      String columnName = "";
-      String typeName = "";
-      int columnSize = 0;
-      String columnClassName = "";
       for (int j = 1; j <= resultSetMetaData.getColumnCount(); j++) {
-        columnName = resultSetMetaData.getColumnName(j);
-        typeName = resultSetMetaData.getColumnTypeName(j);
-        tableName = resultSetMetaData.getTableName(j);
+        String columnName = resultSetMetaData.getColumnName(j);
+        String typeName = resultSetMetaData.getColumnTypeName(j);
+        String tableName = resultSetMetaData.getTableName(j);
+
         if (j == 1 && columnName.contains(KEY_NAME) && columnName.contains(SEPARATOR)) {
           isPushDown = true;
         }
+
         if (!relationalMeta.isSupportFullJoin() && isPushDown) {
           System.out.println(columnName);
           RelationSchema relationSchema =
@@ -141,7 +138,9 @@ public class RelationQueryRowStream implements RowStream {
           tableName = relationSchema.getTableName();
           columnName = relationSchema.getColumnName();
         }
+
         columnNameSet.add(columnName);
+
         if (j == 1 && columnName.equals(KEY_NAME)) {
           key = Field.KEY;
           this.fullKeyName = resultSetMetaData.getColumnName(j);
