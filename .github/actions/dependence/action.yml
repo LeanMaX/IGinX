@@ -108,9 +108,9 @@ runs:
           shell: cmd
           run: |
               curl -L -o DmJdbcDriver8.jar https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar
-              mvn install:install-file \
-              -DgroupId=dm.jdbc \
-              -DartifactId=DmJdbcDriver8 \
-              -Dversion=1.0 \
-              -Dpackaging=jar \
+              mvn install:install-file ^
+              -DgroupId=dm.jdbc ^
+              -DartifactId=DmJdbcDriver8 ^
+              -Dversion=1.0 ^
+              -Dpackaging=jar ^
               -Dfile=DmJdbcDriver8.jar
