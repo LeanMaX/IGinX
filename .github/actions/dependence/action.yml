@@ -95,7 +95,7 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
-              curl -O -L https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
+              wget --dns-servers=8.8.8.8 -user-agent="Mozilla/5.0" https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
               unzip jdbc-20240918.zip
               mvn install:install-file \
               -DgroupId=dm.jdbc \
@@ -110,7 +110,7 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: wsl
           run: |
-              curl -O -L https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
+              wsl wget --dns-servers=8.8.8.8 -user-agent="Mozilla/5.0" https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
               wsl unzip jdbc-20240918.zip
               mvn install:install-file \
               -DgroupId=dm.jdbc \
