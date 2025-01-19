@@ -97,7 +97,7 @@ runs:
           run: |
               wget https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
               unzip jdbc-20240918.zip
-              mvn install:install-file 
+              mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
               -Dversion=1.0 \
@@ -112,7 +112,7 @@ runs:
           run: |
               wsl wget https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
               wsl unzip jdbc-20240918.zip
-              mvn install:install-file 
+              mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
               -Dversion=1.0 \
