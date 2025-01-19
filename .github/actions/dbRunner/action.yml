@@ -131,11 +131,11 @@ runs:
               ports: ${{ inputs.MySQL-ports }}
 
         - if: inputs.DB-name=='dameng'
-          name: Setup DB
+          name: Setup dameng
           uses: ./.github/actions/setup/dameng
 
         - if: inputs.DB-name=='dameng'
-          name: Run DB
+          name: Start dameng Service
           uses: ./.github/actions/service/dameng
           with:
               ports: ${{ inputs.dameng-ports }}
