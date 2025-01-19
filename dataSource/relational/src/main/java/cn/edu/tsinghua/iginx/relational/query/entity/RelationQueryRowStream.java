@@ -49,47 +49,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RelationQueryRowStream implements RowStream {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(RelationQueryRowStream.class);
+
   private final List<ResultSet> resultSets;
+
   private final Header header;
+
   private final boolean isDummy;
+
   private final Filter filter;
+
   private boolean[] gotNext; // 标记每个结果集是否已经获取到下一行，如果是，则在下次调用 next() 时无需再调用该结果集的 next()
+
   private long[] cachedKeys; // 缓存每个结果集当前的 key 列的值
+
   private Object[] cachedValues; // 缓存每列当前的值
+
   private int[] resultSetSizes; // 记录每个结果集的列数
+
   private Map<Field, String> fieldToColumnName; // 记录匹配 tagFilter 的列名
+
   private Row cachedRow;
+
   private boolean hasCachedRow;
+
   private List<Boolean> resultSetHasColumnWithTheSameName;
+
   private List<Connection> connList;
+
   private AbstractRelationalMeta relationalMeta;
+
   private String fullKeyName = KEY_NAME;
+
   private boolean isPushDown = false;
 
   public RelationQueryRowStream(
       List<String> databaseNameList,
-      List<ResultSet> resultSets,
-      boolean isDummy,
-      Filter filter,
-      TagFilter tagFilter,
-      List<Connection> connList,
-      AbstractRelationalMeta relationalMeta)
-      throws SQLException {
-    this(
-        databaseNameList,
-        Collections.emptyList(),
-        resultSets,
-        isDummy,
-        filter,
-        tagFilter,
-        connList,
-        relationalMeta);
-  }
-
-  public RelationQueryRowStream(
-      List<String> databaseNameList,
-      List<String> tableNames,
       List<ResultSet> resultSets,
       boolean isDummy,
       Filter filter,
@@ -102,11 +98,14 @@ public class RelationQueryRowStream implements RowStream {
     this.filter = filter;
     this.connList = connList;
     this.relationalMeta = relationalMeta;
+
     if (resultSets.isEmpty()) {
       this.header = new Header(Field.KEY, Collections.emptyList());
       return;
     }
+
     boolean filterByTags = tagFilter != null;
+
     Field key = null;
     List<Field> fields = new ArrayList<>();
     this.resultSetSizes = new int[resultSets.size()];
@@ -116,16 +115,15 @@ public class RelationQueryRowStream implements RowStream {
     JDBCMeta jdbcMeta = (JDBCMeta) relationalMeta;
     String engine = jdbcMeta.getStorageEngineMeta().getExtraParams().get("engine");
     for (int i = 0; i < resultSets.size(); i++) {
-
       ResultSetMetaData resultSetMetaData = resultSets.get(i).getMetaData();
 
       Set<String> columnNameSet = new HashSet<>(); // 用于检查该resultSet中是否有同名的column
 
       int cnt = 0;
       for (int j = 1; j <= resultSetMetaData.getColumnCount(); j++) {
+        String tableName = resultSetMetaData.getTableName(j);
         String columnName = resultSetMetaData.getColumnName(j);
         String typeName = resultSetMetaData.getColumnTypeName(j);
-        String tableName = resultSetMetaData.getTableName(j);
 
         if (j == 1 && columnName.contains(KEY_NAME) && columnName.contains(SEPARATOR)) {
           isPushDown = true;
@@ -146,6 +144,7 @@ public class RelationQueryRowStream implements RowStream {
           this.fullKeyName = resultSetMetaData.getColumnName(j);
           continue;
         }
+
         Pair<String, Map<String, String>> namesAndTags = splitFullName(columnName);
         Field field;
         if (isDummy) {
@@ -170,13 +169,16 @@ public class RelationQueryRowStream implements RowStream {
         cnt++;
       }
       resultSetSizes[i] = cnt;
+
       if (columnNameSet.size() != resultSetMetaData.getColumnCount()) {
         resultSetHasColumnWithTheSameName.add(true);
       } else {
         resultSetHasColumnWithTheSameName.add(false);
       }
     }
+
     this.header = new Header(key, fields);
+
     this.gotNext = new boolean[resultSets.size()];
     Arrays.fill(gotNext, false);
     this.cachedKeys = new long[resultSets.size()];
@@ -211,6 +213,7 @@ public class RelationQueryRowStream implements RowStream {
     if (resultSets.isEmpty()) {
       return false;
     }
+
     try {
       if (!hasCachedRow) {
         cacheOneRow();
@@ -218,6 +221,7 @@ public class RelationQueryRowStream implements RowStream {
     } catch (SQLException | PhysicalException e) {
       throw new RowFetchException("unexpected error: ", e);
     }
+
     return cachedRow != null;
   }
 
@@ -242,6 +246,7 @@ public class RelationQueryRowStream implements RowStream {
       boolean hasNext = false;
       long key;
       Object[] values = new Object[header.getFieldSize()];
+
       int startIndex = 0;
       int endIndex = 0;
       for (int i = 0; i < resultSets.size(); i++) {
@@ -254,10 +259,13 @@ public class RelationQueryRowStream implements RowStream {
           boolean tempHasNext = resultSet.next();
           hasNext |= tempHasNext;
           gotNext[i] = true;
+
           if (tempHasNext) {
             long tempKey;
             Object tempValue;
+
             Set<String> tableNameSet = new HashSet<>();
+
             for (int j = 0; j < resultSetSizes[i]; j++) {
               String columnName = fieldToColumnName.get(header.getField(startIndex + j));
               RelationSchema schema =
@@ -266,9 +274,10 @@ public class RelationQueryRowStream implements RowStream {
                       isDummy,
                       relationalMeta.getQuote());
               String tableName = schema.getTableName();
-              tableNameSet.add(tableName);
-              Object value = getResultSetObject(resultSet, columnName, tableName);
 
+              tableNameSet.add(tableName);
+
+              Object value = getResultSetObject(resultSet, columnName, tableName);
               if (header.getField(startIndex + j).getType() == DataType.BINARY && value != null) {
                 tempValue = value.toString().getBytes();
               } else if (header.getField(startIndex + j).getType() == DataType.BOOLEAN
@@ -297,6 +306,7 @@ public class RelationQueryRowStream implements RowStream {
               }
               cachedValues[startIndex + j] = tempValue;
             }
+
             if (isDummy) {
               // 在Dummy查询的Join操作中，key列的值是由多个Join表的所有列的值拼接而成的，但实际上的Key列仅由一个表的所有列的值拼接而成
               // 所以在这里需要将key列的值截断为一个表的所有列的值，因为能合并在一行里的不同表的数据一定是key相同的
@@ -308,6 +318,7 @@ public class RelationQueryRowStream implements RowStream {
               tempKey = resultSet.getLong(fullKeyName);
             }
             cachedKeys[i] = tempKey;
+
           } else {
             cachedKeys[i] = Long.MAX_VALUE;
             for (int j = startIndex; j < endIndex; j++) {
@@ -338,6 +349,7 @@ public class RelationQueryRowStream implements RowStream {
           }
           startIndex = endIndex;
         }
+
         cachedRow = new Row(header, key, values);
         if (!validate(filter, cachedRow)) {
           continue;
@@ -360,6 +372,7 @@ public class RelationQueryRowStream implements RowStream {
     if (!relationalMeta.isSupportFullJoin() && isPushDown) {
       return resultSet.getObject(tableName + SEPARATOR + columnName);
     }
+
     if (!resultSetHasColumnWithTheSameName.get(resultSets.indexOf(resultSet))) {
       return resultSet.getObject(columnName);
     }

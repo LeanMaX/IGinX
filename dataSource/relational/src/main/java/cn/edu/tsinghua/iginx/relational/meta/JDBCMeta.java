@@ -96,7 +96,10 @@ public class JDBCMeta extends AbstractRelationalMeta {
             : DROP_COLUMN_STATEMENT;
     queryTableStatement = properties.getProperty("query_table_statement");
     queryTableWithoutKeyStatement = properties.getProperty("query_table_without_key_statement");
-    updateTableStatement = properties.getProperty("update_table_statement");
+    updateTableStatement =
+        properties.containsKey("update_table_statement")
+            ? properties.getProperty("update_table_statement")
+            : getUpdateStatement();
     needQuote = Boolean.parseBoolean(properties.getProperty("jdbc_need_quote"));
     schemaPattern = properties.getProperty("schema_pattern");
     upsertStatement = properties.getProperty("upsert_statement");
@@ -180,7 +183,7 @@ public class JDBCMeta extends AbstractRelationalMeta {
 
   @Override
   public String getUpdateTableStatement() {
-    return updateTableStatement.isEmpty() ? getUpdateStatement() : updateTableStatement;
+    return updateTableStatement;
   }
 
   @Override
