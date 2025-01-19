@@ -95,28 +95,24 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
-              wget --user-agent="Mozilla/5.0" --referer="https://download.dameng.com" https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
-              unzip jdbc-20240918.zip
-              mvn install:install-file \
-              -DgroupId=dm.jdbc \
-              -DartifactId=DmJdbcDriver8 \
-              -Dversion=1.0 \
-              -Dpackaging=jar \ 
-              -Dfile=jdbc-20240918/DmJdbcDriver8.jar
-              rm -rf jdbc-20240918
-              rm -rf jdbc-20240918.zip
-
-        - if: runner.os == 'Windows'
-          name: Download and Install dameng JDBC Driver
-          shell: wsl
-          run: |
-              wsl wget --user-agent="Mozilla/5.0" --referer="https://download.dameng.com" https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
-              wsl unzip jdbc-20240918.zip
+              wget https://github.com/LeanMaX/IGinX-resources//raw/refs/heads/master/DmJdbcDriver8.jar            
               mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
               -Dversion=1.0 \
               -Dpackaging=jar \   
-              -Dfile=jdbc-20240918/DmJdbcDriver8.jar
-              wsl rm -rf jdbc-20240918
-              wsl rm -rf jdbc-20240918.zip
+              -Dfile=DmJdbcDriver8.jar
+              wsl rm -rf DmJdbcDriver8.jar
+
+        - if: runner.os == 'Windows'
+          name: Download and Install dameng JDBC Driver
+          shell: wsl
+          run: |
+              wsl wget https://github.com/LeanMaX/IGinX-resources//raw/refs/heads/master/DmJdbcDriver8.jar            
+              mvn install:install-file \
+              -DgroupId=dm.jdbc \
+              -DartifactId=DmJdbcDriver8 \
+              -Dversion=1.0 \
+              -Dpackaging=jar \   
+              -Dfile=DmJdbcDriver8.jar
+              wsl rm -rf DmJdbcDriver8.jar

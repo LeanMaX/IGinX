@@ -34,27 +34,27 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
-              curl -O -L https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip                 
-              unzip jdbc-20240918.zip
+              wget https://github.com/LeanMaX/IGinX-resources//raw/refs/heads/master/DmJdbcDriver8.jar            
               mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
               -Dversion=1.0 \
-              -Dpackaging=jar \ 
-              -Dfile=jdbc-20240918/DmJdbcDriver8.jar
+              -Dpackaging=jar \   
+              -Dfile=DmJdbcDriver8.jar
+              wsl rm -rf DmJdbcDriver8.jar
 
         - if: runner.os == 'Windows'
           name: Download and Install dameng JDBC Driver
           shell: wsl
           run: |
-              curl -O -L https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip                 
-              wsl unzip jdbc-20240918.zip
+              wsl wget https://github.com/LeanMaX/IGinX-resources//raw/refs/heads/master/DmJdbcDriver8.jar            
               mvn install:install-file \
-                -DgroupId=dm.jdbc \
-                -DartifactId=DmJdbcDriver8 \
-                -Dversion=1.0 \
-                -Dpackaging=jar \ 
-                -Dfile=jdbc-20240918/DmJdbcDriver8.jar
+              -DgroupId=dm.jdbc \
+              -DartifactId=DmJdbcDriver8 \
+              -Dversion=1.0 \
+              -Dpackaging=jar \   
+              -Dfile=DmJdbcDriver8.jar
+            wsl rm -rf DmJdbcDriver8.jar
 
         - if: runner.os == 'Linux' || runner.os == 'macOS'
           name: Download dameng Database Docker image and Load dameng Database container
