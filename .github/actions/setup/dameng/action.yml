@@ -34,7 +34,7 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
-              wget https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
+              curl -O -L https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip                 
               unzip jdbc-20240918.zip
               mvn install:install-file \
               -DgroupId=dm.jdbc \
@@ -47,7 +47,7 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: wsl
           run: |
-              wsl wget https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip            
+              curl -O -L https://download.dameng.com/eco/adapter/resource/jdbc/jdbc-20240918.zip                 
               wsl unzip jdbc-20240918.zip
               mvn install:install-file \
                 -DgroupId=dm.jdbc \
