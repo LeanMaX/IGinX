@@ -95,7 +95,7 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
-              wget https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar            
+              wget https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar  
               mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
@@ -105,9 +105,9 @@ runs:
 
         - if: runner.os == 'Windows'
           name: Download and Install dameng JDBC Driver
-          shell: wsl
+          shell: cmd
           run: |
-              wsl wget https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar            
+              curl -L -o DmJdbcDriver8.jar https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar
               mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \

@@ -34,7 +34,7 @@ runs:
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
-              wget https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar            
+              wget https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar
               mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
@@ -44,9 +44,9 @@ runs:
 
         - if: runner.os == 'Windows'
           name: Download and Install dameng JDBC Driver
-          shell: wsl
+          shell: cmd
           run: |
-              wsl wget https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar            
+              curl -L -o DmJdbcDriver8.jar https://github.com/LeanMaX/IGinX-resources/raw/refs/heads/master/DmJdbcDriver8.jar
               mvn install:install-file \
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
@@ -63,7 +63,7 @@ runs:
 
         - if: runner.os == 'Windows'
           name: Download dameng Database Docker image and Load dameng Database container
-          shell: wsl
+          shell: cmd
           run: |
-              wsl wget https://github.com/IGinX-THU/IGinX-resources/raw/refs/heads/main/resources/dm8_20241022_x86_rh6_64_single.tar
+              curl -L -o https://github.com/IGinX-THU/IGinX-resources/raw/refs/heads/main/resources/dm8_20241022_x86_rh6_64_single.tar
               docker load -i dm8_20241022_x86_rh6_64_single.tar
