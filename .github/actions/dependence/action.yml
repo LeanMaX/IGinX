@@ -100,7 +100,7 @@ runs:
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
               -Dversion=1.0 \
-              -Dpackaging=jar \   
+              -Dpackaging=jar \
               -Dfile=DmJdbcDriver8.jar
 
         - if: runner.os == 'Windows'
@@ -112,5 +112,5 @@ runs:
               -DgroupId=dm.jdbc \
               -DartifactId=DmJdbcDriver8 \
               -Dversion=1.0 \
-              -Dpackaging=jar \   
+              -Dpackaging=jar \
               -Dfile=DmJdbcDriver8.jar
