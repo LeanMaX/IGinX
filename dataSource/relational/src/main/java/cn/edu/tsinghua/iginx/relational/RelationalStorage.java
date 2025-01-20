@@ -1394,9 +1394,9 @@ public class RelationalStorage implements IStorage {
                       getQuotName(databaseName),
                       getQuotName(tableName),
                       getQuotName(columnName),
-                      getQuotName(KEY_NAME),
+                      //                      getQuotName(KEY_NAME),
                       keyRange.getBeginKey(),
-                      getQuotName(KEY_NAME),
+                      //                      getQuotName(KEY_NAME),
                       keyRange.getEndKey());
               LOGGER.info("[Delete] execute delete: {}", statement);
               stmt.execute(statement); // 将目标列的目标范围的值置为空
