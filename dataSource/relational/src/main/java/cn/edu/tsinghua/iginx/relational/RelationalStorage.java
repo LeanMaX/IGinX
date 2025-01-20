@@ -1391,12 +1391,11 @@ public class RelationalStorage implements IStorage {
                   String.format(
                       //                          relationalMeta.getUpdateStatement(),
                       relationalMeta.getUpdateTableStatement(),
-                      getQuotName(databaseName),
-                      getQuotName(tableName),
+                      getTableNameByDB(databaseName, tableName),
                       getQuotName(columnName),
-                      //                      getQuotName(KEY_NAME),
+                      //                                            getQuotName(KEY_NAME),
                       keyRange.getBeginKey(),
-                      //                      getQuotName(KEY_NAME),
+                      //                                            getQuotName(KEY_NAME),
                       keyRange.getEndKey());
               LOGGER.info("[Delete] execute delete: {}", statement);
               stmt.execute(statement); // 将目标列的目标范围的值置为空
@@ -2174,5 +2173,15 @@ public class RelationalStorage implements IStorage {
     } catch (SQLException e) {
       throw new RelationalException(e);
     }
+  }
+
+  private String getTableNameByDB(String databaseName, String name) {
+    String engineName = meta.getExtraParams().get("engine");
+    if (engineName.equals("dm")) {
+      name = getQuotName(databaseName) + SEPARATOR + getQuotName(name);
+    } else {
+      name = getQuotName(name);
+    }
+    return name;
   }
 }

@@ -149,6 +149,8 @@ public abstract class AbstractRelationalMeta {
 
   public abstract String getUpdateTableStatement();
 
+  public abstract String getDeleteTableStatement();
+
   /**
    * 在使用JDBC时元数据查询时，是否需要引号
    *
