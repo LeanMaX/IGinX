@@ -558,7 +558,7 @@ public class RelationalStorage implements IStorage {
               String.format(
                   relationalMeta.getQueryStatement(),
                   quotColumnNames,
-                  getQuotName(databaseName) + "." + getQuotName(tableName),
+                  getTableNameByDB(databaseName, tableName),
                   filterStr.isEmpty() ? "" : "WHERE " + filterStr,
                   getQuotName(KEY_NAME));
           ResultSet rs = null;
