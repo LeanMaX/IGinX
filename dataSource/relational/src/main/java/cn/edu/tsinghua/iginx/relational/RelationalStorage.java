@@ -1368,8 +1368,7 @@ public class RelationalStorage implements IStorage {
                   String.format(
                       //                      DROP_COLUMN_STATEMENT,
                       relationalMeta.getAlterTableDropColumnStatement(),
-                      getQuotName(databaseName),
-                      getQuotName(tableName),
+                      getTableNameByDB(databaseName, tableName),
                       getQuotName(columnName));
               LOGGER.info("[Delete] execute delete: {}", statement);
               try {
