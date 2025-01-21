@@ -45,7 +45,7 @@ import pemja.core.PythonInterpreterConfig;
 
 public class PySessionIT {
 
-  private static final Logger logger = LoggerFactory.getLogger(PySessionIT.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PySessionIT.class);
 
   protected static MultiConnection session;
   private static final String PATH =
@@ -69,13 +69,16 @@ public class PySessionIT {
 
   private static boolean isAbleToDelete = true;
   private static PythonInterpreter interpreter;
+  protected static String runningEngine;
 
   public PySessionIT() {
     ConfLoader conf = new ConfLoader(Controller.CONFIG_FILE);
     DBConf dbConf = conf.loadDBConf(conf.getStorageType());
+    runningEngine = conf.getStorageType();
     isAbleToDelete = dbConf.getEnumValue(DBConf.DBConfType.isAbleToDelete);
     PythonInterpreterConfig config =
         PythonInterpreterConfig.newBuilder().setPythonExec(pythonCMD).addPythonPaths(PATH).build();
+    LOGGER.debug("using pythonCMD: {}", pythonCMD);
     interpreter = new PythonInterpreter(config);
     interpreter.exec("import tests");
     interpreter.exec("t = tests.Tests()");
@@ -84,11 +87,11 @@ public class PySessionIT {
   @BeforeClass
   public static void setUp() throws SessionException {
     // 清除历史数据
-    logger.info("Clear all data before executing pysession tests.");
+    LOGGER.info("Clear all data before executing pysession tests.");
     ConfLoader conf = new ConfLoader(Controller.CONFIG_FILE);
     DBConf dbConf = conf.loadDBConf(conf.getStorageType());
     isAbleToDelete = dbConf.getEnumValue(DBConf.DBConfType.isAbleToDelete);
-    logger.info("isAbleToDelete: " + isAbleToDelete);
+    LOGGER.info("isAbleToDelete: " + isAbleToDelete);
     if (isForSession) {
       session =
           new MultiConnection(
@@ -133,22 +136,27 @@ public class PySessionIT {
   @Before
   public void insertBaseData() {
     try {
-      logger.info("Insert base data before executing pysession tests.");
+      LOGGER.info("Insert base data before executing pysession tests.");
       String output = runPythonScript("insertBaseDataset");
-      logger.info(output);
+      LOGGER.info(output);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
   }
 
+  private boolean pythonNewerThan313() {
+    interpreter.exec("import sys; tooNew = sys.version_info >= (3, 13);");
+    return (boolean) interpreter.get("tooNew");
+  }
+
   @Test
   public void testAQuery() {
     String result = "";
     try {
-      logger.info("Test A query");
+      LOGGER.info("Test A query");
       result = runPythonScript("query");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -174,9 +182,9 @@ public class PySessionIT {
     String result = "";
     try {
       // 设置Python脚本路径
-      logger.info("Test downsample query");
+      LOGGER.info("Test downsample query");
       result = runPythonScript("downsampleQuery");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -198,9 +206,9 @@ public class PySessionIT {
     String result = "";
     try {
       // 设置Python脚本路径
-      logger.info("Test downsample query without time interval");
+      LOGGER.info("Test downsample query without time interval");
       result = runPythonScript("downsampleQueryNoInterval");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -224,9 +232,9 @@ public class PySessionIT {
   public void testShowColumnsQuery() {
     String result = "";
     try {
-      logger.info("Test show columns query");
+      LOGGER.info("Test show columns query");
       result = runPythonScript("showColumns");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -247,9 +255,9 @@ public class PySessionIT {
   public void testAggregateQuery() {
     String result = "";
     try {
-      logger.info("Test aggregate query");
+      LOGGER.info("Test aggregate query");
       result = runPythonScript("aggregateQuery");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -268,9 +276,9 @@ public class PySessionIT {
   public void testLastQuery() {
     String result = "";
     try {
-      logger.info("Test last query");
+      LOGGER.info("Test last query");
       result = runPythonScript("lastQuery");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -292,9 +300,9 @@ public class PySessionIT {
     }
     String result = "";
     try {
-      logger.info("Test delete column query");
+      LOGGER.info("Test delete column query");
       result = runPythonScript("deleteColumn");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -313,10 +321,13 @@ public class PySessionIT {
   @Test
   public void testAddStorageEngine() {
     String output = "";
+    // if python >=3.13, fastparquet is not supported(for now).
+    Assume.assumeFalse(
+        "Test skipped: Python >= 3.13, fastparquet is not supported.", pythonNewerThan313());
     try {
-      logger.info("add storage engine");
+      LOGGER.info("add storage engine");
       output = runPythonScript("addStorageEngine");
-      logger.info(output);
+      LOGGER.info(output);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -346,9 +357,9 @@ public class PySessionIT {
   public void testInsert() {
     String result = "";
     try {
-      logger.info("insert data");
+      LOGGER.info("insert data");
       result = runPythonScript("insert");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -401,9 +412,9 @@ public class PySessionIT {
   public void testInsertDF() {
     String result = "";
     try {
-      logger.info("insert dataframe");
+      LOGGER.info("insert dataframe");
       result = runPythonScript("insertDF");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -432,9 +443,9 @@ public class PySessionIT {
     }
     String result = "";
     try {
-      logger.info("delete row");
+      LOGGER.info("delete row");
       result = runPythonScript("deleteRow");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -461,9 +472,9 @@ public class PySessionIT {
   public void testDebugInfo() {
     String result = "";
     try {
-      logger.info("get debug info");
+      LOGGER.info("get debug info");
       result = runPythonScript("getDebugInfo");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -479,9 +490,9 @@ public class PySessionIT {
     }
     String result = "";
     try {
-      logger.info("load csv");
+      LOGGER.info("load csv");
       result = runPythonScript("loadCSV");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -498,6 +509,19 @@ public class PySessionIT {
             + "5    5      b''      b''     b'b'      b''\n"
             + "6    6      b''      b''      b''     b'c'\n"
             + "7    7     b'Q'     b'W'     b'E'     b'R'\n";
+    if (runningEngine.equals("Oracle")) { // oracle 传入空字符串时默认存成NULL
+      expected =
+          "LoadCSVResp(status=Status(code=200, message=None, subStatus=None), columns=['test.a.a', 'test.a.b', 'test.b.b', 'test.c.c'], recordsNum=4, parseErrorMsg=None)\n"
+              + "   key test.a.a test.a.b test.b.b test.c.c\n"
+              + "0    0     b'a'     b'b'     None     None\n"
+              + "1    1     None     None     b'b'     None\n"
+              + "2    2     None     None     None     b'c'\n"
+              + "3    3     b'Q'     b'W'     b'E'     b'R'\n"
+              + "4    4     b'a'     b'b'     None     None\n"
+              + "5    5     None     None     b'b'     None\n"
+              + "6    6     None     None     None     b'c'\n"
+              + "7    7     b'Q'     b'W'     b'E'     b'R'\n";
+    }
     assertEquals(expected, result);
   }
 
@@ -505,9 +529,9 @@ public class PySessionIT {
   public void testLoadDirectory() {
     String result = "";
     try {
-      logger.info("load directory");
+      LOGGER.info("load directory");
       result = runPythonScript("loadDirectory");
-      logger.info(result);
+      LOGGER.info(result);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -516,7 +540,7 @@ public class PySessionIT {
     List<String> expected = Arrays.asList("   key dir.a dir.b", "0    0  b'1'  b'4'");
     String[] lines = result.split("\n");
     List<String> resultLines = Arrays.asList(lines);
-    logger.info(resultLines.toString());
+    LOGGER.info(resultLines.toString());
     assertTrue(resultLines.size() >= 2);
     assertEquals(expected, resultLines.subList(resultLines.size() - 2, resultLines.size()));
   }
@@ -525,9 +549,9 @@ public class PySessionIT {
   public void testExport() {
     List<String> result = new ArrayList<>();
     try {
-      logger.info("export to file");
+      LOGGER.info("export to file");
       String tmp = runPythonScript("exportToFile");
-      logger.info(tmp);
+      LOGGER.info(tmp);
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
@@ -582,7 +606,7 @@ public class PySessionIT {
       return;
     }
     try {
-      logger.info("Clear all data after executing pysession tests.");
+      LOGGER.info("Clear all data after executing pysession tests.");
       String output = runPythonScript("deleteAll");
     } catch (IOException | InterruptedException e) {
       e.printStackTrace();

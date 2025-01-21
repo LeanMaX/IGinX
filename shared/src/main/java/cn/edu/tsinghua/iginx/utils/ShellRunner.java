@@ -34,8 +34,8 @@ public class ShellRunner {
     Process p = null;
     try {
       ProcessBuilder builder = new ProcessBuilder();
-      if (isOnWin()) {;
-        builder.command((isCommandOnPath("bash") ? "bash" : BASH_PATH), command);
+      if (isOnWin()) {
+        builder.command(BASH_PATH, command); // WSL负责安装docker环境,默认使用Git Bash,WSL Bash可能会缺少依赖的基础环境。
       } else {
         builder.command(command);
       }
@@ -79,8 +79,36 @@ public class ShellRunner {
         throw new Exception(
             "process exited with value: " + i + "; command: " + Arrays.toString(command));
       }
-    } catch (IOException | SecurityException e) {
-      throw new Exception("run command failed: " + e.getMessage());
+    } finally {
+      if (p != null) {
+        p.destroy();
+      }
+    }
+  }
+
+  /** 使用命令行执行命令并返回结果，结果中的各行用lineSeperator进行拼接 */
+  public static String runCommandAndGetResult(String lineSeperator, String... command)
+      throws Exception {
+    Process p = null;
+    try {
+      ProcessBuilder builder = new ProcessBuilder();
+      builder.command(command);
+      builder.redirectErrorStream(true);
+      p = builder.start();
+      BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+      StringBuilder result = new StringBuilder();
+      String line;
+      while ((line = br.readLine()) != null) {
+        result.append(line).append(lineSeperator);
+      }
+
+      p.waitFor();
+      int i = p.exitValue();
+      if (i != 0) {
+        throw new Exception(
+            "process exited with value: " + i + "; command: " + Arrays.toString(command));
+      }
+      return result.toString();
     } finally {
       if (p != null) {
         p.destroy();

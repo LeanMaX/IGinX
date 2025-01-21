@@ -29,10 +29,17 @@ inputs:
         description: "Redis ports"
         required: false
         default: 6379
+<<<<<<< HEAD
     dameng-ports:
         description: "dameng ports"
         required: false
         default: 5236
+=======
+    Oracle-ports:
+        description: "Oracle ports"
+        required: false
+        default: 1521
+>>>>>>> lin/add-dm-datasource-0121
 
 runs:
     using: "composite" # Mandatory parameter
@@ -67,6 +74,8 @@ runs:
           name: Run DB
           shell: bash
           run: |
+              java -version
+              which java
               if [ "$RUNNER_OS" == "Linux" ]; then
                 chmod +x "${GITHUB_WORKSPACE}/.github/scripts/dataSources/startup/iotdb12.sh"
                 "${GITHUB_WORKSPACE}/.github/scripts/dataSources/startup/iotdb12.sh" ${{ inputs.IoTDB12-ports }}
@@ -130,6 +139,7 @@ runs:
           with:
               ports: ${{ inputs.MySQL-ports }}
 
+<<<<<<< HEAD
         - if: inputs.DB-name=='dameng'
           name: Setup dameng
           uses: ./.github/actions/setup/dameng
@@ -139,3 +149,15 @@ runs:
           uses: ./.github/actions/service/dameng
           with:
               ports: ${{ inputs.dameng-ports }}
+=======
+        - if: inputs.DB-name=='Oracle'
+          name: Setup DB
+          uses: ./.github/actions/setup/oracle
+
+        - if: inputs.DB-name == 'Oracle'
+          id: oracleService
+          name: Start Oracle Service
+          uses: ./.github/actions/service/oracle
+          with:
+              ports: ${{ inputs.Oracle-ports }}
+>>>>>>> lin/add-dm-datasource-0121

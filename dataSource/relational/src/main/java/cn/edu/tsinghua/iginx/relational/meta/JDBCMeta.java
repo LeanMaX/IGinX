@@ -26,6 +26,7 @@ import cn.edu.tsinghua.iginx.metadata.entity.StorageEngineMeta;
 import cn.edu.tsinghua.iginx.relational.datatype.transformer.DmDataTypeTransformer;
 import cn.edu.tsinghua.iginx.relational.datatype.transformer.IDataTypeTransformer;
 import cn.edu.tsinghua.iginx.relational.datatype.transformer.JDBCDataTypeTransformer;
+import cn.edu.tsinghua.iginx.relational.datatype.transformer.OracleLDataTypeTransformer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -58,6 +59,8 @@ public class JDBCMeta extends AbstractRelationalMeta {
 
   private final String queryTableWithoutKeyStatement;
 
+  private final String insertTableStatement;
+
   private final String updateTableStatement;
 
   private final String deleteTableStatement;
@@ -77,31 +80,23 @@ public class JDBCMeta extends AbstractRelationalMeta {
     quote = properties.getProperty("quote").charAt(0);
     driverClass = properties.getProperty("driver_class");
     defaultDatabaseName = properties.getProperty("default_database");
-    if (meta.getExtraParams().get("engine").equalsIgnoreCase("dm")) {
-      dataTypeTransformer = DmDataTypeTransformer.getInstance();
+    if (meta.getExtraParams().get("engine").equalsIgnoreCase("oracle")) {
+      dataTypeTransformer = OracleLDataTypeTransformer.getInstance();
     } else {
       dataTypeTransformer = new JDBCDataTypeTransformer(properties);
     }
     systemDatabaseName = Arrays.asList(properties.getProperty("system_databases").split(","));
     databaseQuerySql = properties.getProperty("database_query_sql");
     databaseDropStatement = properties.getProperty("drop_database_statement");
-    databaseCreateStatement =
-        properties.containsKey("create_database_statement")
-            ? properties.getProperty("create_database_statement")
-            : CREATE_DATABASE_STATEMENT;
+    databaseCreateStatement = properties.getProperty("create_database_statement");
     grantPrivilegesStatement = properties.getProperty("grant_privileges_statement");
     createTableStatement = properties.getProperty("create_table_statement");
     alterTableAddColumnStatement = properties.getProperty("alter_table_add_column_statement");
-    alterTableDropColumnStatement =
-        properties.containsKey("alter_table_drop_column_statement")
-            ? properties.getProperty("alter_table_drop_column_statement")
-            : DROP_COLUMN_STATEMENT;
+    alterTableDropColumnStatement = properties.getProperty("alter_table_drop_column_statement");
     queryTableStatement = properties.getProperty("query_table_statement");
     queryTableWithoutKeyStatement = properties.getProperty("query_table_without_key_statement");
-    updateTableStatement =
-        properties.containsKey("update_table_statement")
-            ? properties.getProperty("update_table_statement")
-            : getUpdateStatement();
+    insertTableStatement = properties.getProperty("insert_table_statement");
+    updateTableStatement = properties.getProperty("update_table_statement");
     deleteTableStatement = properties.getProperty("delete_table_statement");
     needQuote = Boolean.parseBoolean(properties.getProperty("jdbc_need_quote"));
     schemaPattern = properties.getProperty("schema_pattern");
@@ -159,10 +154,10 @@ public class JDBCMeta extends AbstractRelationalMeta {
     return grantPrivilegesStatement;
   }
 
-  //  @Override
-  //  public String getCreateTableStatement() {
-  //    return createTableStatement;
-  //  }
+  @Override
+  public String getCreateTableStatement() {
+    return createTableStatement;
+  }
 
   @Override
   public String getAlterTableDropColumnStatement() {
@@ -182,6 +177,11 @@ public class JDBCMeta extends AbstractRelationalMeta {
   @Override
   public String getQueryTableWithoutKeyStatement() {
     return queryTableWithoutKeyStatement;
+  }
+
+  @Override
+  public String getInsertTableStatement() {
+    return insertTableStatement;
   }
 
   @Override
