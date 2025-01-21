@@ -30,6 +30,7 @@ public abstract class AbstractRelationalMeta {
   protected StorageEngineMeta meta;
 
   protected static final String DROP_DATABASE_STATEMENT = "DROP DATABASE IF EXISTS %s;";
+  //  protected static final String DROP_DATABASE_STATEMENT = "DROP DATABASE IF EXISTS %s;";
 
   public AbstractRelationalMeta(StorageEngineMeta meta) {
     this.meta = meta;
@@ -133,6 +134,22 @@ public abstract class AbstractRelationalMeta {
   }
 
   public abstract String getDropDatabaseStatement();
+
+  public abstract String getCreateDatabaseStatement();
+
+  public abstract String getGrantPrivilegesStatement();
+
+  public abstract String getAlterTableAddColumnStatement();
+
+  public abstract String getAlterTableDropColumnStatement();
+
+  public abstract String getQueryTableStatement();
+
+  public abstract String getQueryTableWithoutKeyStatement();
+
+  public abstract String getUpdateTableStatement();
+
+  public abstract String getDeleteTableStatement();
 
   /**
    * 在使用JDBC时元数据查询时，是否需要引号

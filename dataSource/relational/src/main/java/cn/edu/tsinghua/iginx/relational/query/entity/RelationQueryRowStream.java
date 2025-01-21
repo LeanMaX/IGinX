@@ -35,9 +35,11 @@ import cn.edu.tsinghua.iginx.engine.shared.data.read.RowStream;
 import cn.edu.tsinghua.iginx.engine.shared.operator.filter.Filter;
 import cn.edu.tsinghua.iginx.engine.shared.operator.tag.TagFilter;
 import cn.edu.tsinghua.iginx.relational.meta.AbstractRelationalMeta;
+import cn.edu.tsinghua.iginx.relational.meta.JDBCMeta;
 import cn.edu.tsinghua.iginx.relational.tools.RelationSchema;
 import cn.edu.tsinghua.iginx.thrift.DataType;
 import cn.edu.tsinghua.iginx.utils.Pair;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -110,6 +112,8 @@ public class RelationQueryRowStream implements RowStream {
     this.fieldToColumnName = new HashMap<>();
     this.resultSetHasColumnWithTheSameName = new ArrayList<>();
 
+    JDBCMeta jdbcMeta = (JDBCMeta) relationalMeta;
+    String engine = jdbcMeta.getStorageEngineMeta().getExtraParams().get("engine");
     for (int i = 0; i < resultSets.size(); i++) {
       ResultSetMetaData resultSetMetaData = resultSets.get(i).getMetaData();
 
@@ -281,7 +285,21 @@ public class RelationQueryRowStream implements RowStream {
                 if (value instanceof Boolean) {
                   tempValue = value;
                 } else {
-                  tempValue = ((int) value) == 1;
+                  if (value instanceof BigDecimal) {
+                    tempValue = ((BigDecimal) value).intValue() == 1;
+                  } else if (value instanceof Byte) {
+                    tempValue = ((Byte) value) == 1;
+                  } else {
+                    tempValue = ((int) value) == 1;
+                  }
+                }
+              } else if (value instanceof BigDecimal) {
+                if (header.getField(startIndex + j).getType() == DataType.INTEGER) {
+                  tempValue = ((BigDecimal) value).intValue();
+                } else if (header.getField(startIndex + j).getType() == DataType.DOUBLE) {
+                  tempValue = ((BigDecimal) value).doubleValue();
+                } else {
+                  tempValue = ((BigDecimal) value).longValue();
                 }
               } else {
                 tempValue = value;
@@ -312,7 +330,6 @@ public class RelationQueryRowStream implements RowStream {
         }
         startIndex = endIndex;
       }
-
       if (hasNext) {
         key = Arrays.stream(cachedKeys).min().getAsLong();
         startIndex = 0;
@@ -332,6 +349,7 @@ public class RelationQueryRowStream implements RowStream {
           }
           startIndex = endIndex;
         }
+
         cachedRow = new Row(header, key, values);
         if (!validate(filter, cachedRow)) {
           continue;

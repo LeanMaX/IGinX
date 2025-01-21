@@ -19,7 +19,11 @@
  */
 package cn.edu.tsinghua.iginx.relational.meta;
 
+import static cn.edu.tsinghua.iginx.relational.tools.Constants.CREATE_DATABASE_STATEMENT;
+import static cn.edu.tsinghua.iginx.relational.tools.Constants.DROP_COLUMN_STATEMENT;
+
 import cn.edu.tsinghua.iginx.metadata.entity.StorageEngineMeta;
+import cn.edu.tsinghua.iginx.relational.datatype.transformer.DmDataTypeTransformer;
 import cn.edu.tsinghua.iginx.relational.datatype.transformer.IDataTypeTransformer;
 import cn.edu.tsinghua.iginx.relational.datatype.transformer.JDBCDataTypeTransformer;
 import java.util.Arrays;
@@ -32,7 +36,7 @@ public class JDBCMeta extends AbstractRelationalMeta {
 
   private final String driverClass;
 
-  private final JDBCDataTypeTransformer dataTypeTransformer;
+  private final IDataTypeTransformer dataTypeTransformer;
 
   private final List<String> systemDatabaseName;
 
@@ -40,20 +44,32 @@ public class JDBCMeta extends AbstractRelationalMeta {
 
   private final String databaseDropStatement;
 
+  private final String databaseCreateStatement;
+
+  private final String grantPrivilegesStatement;
+
+  private final String createTableStatement;
+
+  private final String alterTableAddColumnStatement;
+
+  private final String alterTableDropColumnStatement;
+
+  private final String queryTableStatement;
+
+  private final String queryTableWithoutKeyStatement;
+
+  private final String updateTableStatement;
+
+  private final String deleteTableStatement;
+
   private final boolean needQuote;
 
   private final String schemaPattern;
-
   private final String upsertStatement;
-
   private final String upsertConflictStatement;
-
   private final boolean isSupportFullJoin;
-
   private final String regexpOp;
-
   private final String notRegexOp;
-
   private final boolean jdbcSupportBackslash;
 
   public JDBCMeta(StorageEngineMeta meta, Properties properties) {
@@ -61,10 +77,32 @@ public class JDBCMeta extends AbstractRelationalMeta {
     quote = properties.getProperty("quote").charAt(0);
     driverClass = properties.getProperty("driver_class");
     defaultDatabaseName = properties.getProperty("default_database");
-    dataTypeTransformer = new JDBCDataTypeTransformer(properties);
+    if (meta.getExtraParams().get("engine").equalsIgnoreCase("dm")) {
+      dataTypeTransformer = DmDataTypeTransformer.getInstance();
+    } else {
+      dataTypeTransformer = new JDBCDataTypeTransformer(properties);
+    }
     systemDatabaseName = Arrays.asList(properties.getProperty("system_databases").split(","));
     databaseQuerySql = properties.getProperty("database_query_sql");
     databaseDropStatement = properties.getProperty("drop_database_statement");
+    databaseCreateStatement =
+        properties.containsKey("create_database_statement")
+            ? properties.getProperty("create_database_statement")
+            : CREATE_DATABASE_STATEMENT;
+    grantPrivilegesStatement = properties.getProperty("grant_privileges_statement");
+    createTableStatement = properties.getProperty("create_table_statement");
+    alterTableAddColumnStatement = properties.getProperty("alter_table_add_column_statement");
+    alterTableDropColumnStatement =
+        properties.containsKey("alter_table_drop_column_statement")
+            ? properties.getProperty("alter_table_drop_column_statement")
+            : DROP_COLUMN_STATEMENT;
+    queryTableStatement = properties.getProperty("query_table_statement");
+    queryTableWithoutKeyStatement = properties.getProperty("query_table_without_key_statement");
+    updateTableStatement =
+        properties.containsKey("update_table_statement")
+            ? properties.getProperty("update_table_statement")
+            : getUpdateStatement();
+    deleteTableStatement = properties.getProperty("delete_table_statement");
     needQuote = Boolean.parseBoolean(properties.getProperty("jdbc_need_quote"));
     schemaPattern = properties.getProperty("schema_pattern");
     upsertStatement = properties.getProperty("upsert_statement");
@@ -112,6 +150,51 @@ public class JDBCMeta extends AbstractRelationalMeta {
   }
 
   @Override
+  public String getCreateDatabaseStatement() {
+    return databaseCreateStatement;
+  }
+
+  @Override
+  public String getGrantPrivilegesStatement() {
+    return grantPrivilegesStatement;
+  }
+
+  //  @Override
+  //  public String getCreateTableStatement() {
+  //    return createTableStatement;
+  //  }
+
+  @Override
+  public String getAlterTableDropColumnStatement() {
+    return alterTableDropColumnStatement;
+  }
+
+  @Override
+  public String getAlterTableAddColumnStatement() {
+    return alterTableAddColumnStatement;
+  }
+
+  @Override
+  public String getQueryTableStatement() {
+    return queryTableStatement;
+  }
+
+  @Override
+  public String getQueryTableWithoutKeyStatement() {
+    return queryTableWithoutKeyStatement;
+  }
+
+  @Override
+  public String getUpdateTableStatement() {
+    return updateTableStatement;
+  }
+
+  @Override
+  public String getDeleteTableStatement() {
+    return deleteTableStatement;
+  }
+
+  @Override
   public boolean jdbcNeedQuote() {
     return needQuote;
   }
@@ -149,5 +232,9 @@ public class JDBCMeta extends AbstractRelationalMeta {
   @Override
   public boolean jdbcSupportSpecialChar() {
     return jdbcSupportBackslash;
+  }
+
+  public StorageEngineMeta getStorageEngineMeta() {
+    return meta;
   }
 }
