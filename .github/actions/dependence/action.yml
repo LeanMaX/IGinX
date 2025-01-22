@@ -157,7 +157,6 @@ runs:
               echo "SERVICE_DIR=${PROJECT_ROOT}/.github/actions/service" >> $GITHUB_ENV
 
         - if: runner.os == 'Linux' || runner.os == 'macOS'
-<<<<<<< HEAD
           name: Download and Install dameng JDBC Driver
           shell: bash
           run: |
@@ -180,7 +179,6 @@ runs:
               -Dversion=1.0 ^
               -Dpackaging=jar ^
               -Dfile=DmJdbcDriver8.jar
-=======
           name: Download and Install Oracle JDBC Driver
           shell: bash
           run: |
@@ -203,4 +201,3 @@ runs:
               -Dversion=19.3.0.0 ^
               -Dpackaging=jar ^
               -Dfile=ojdbc8.jar
->>>>>>> lin/add-dm-datasource-0121

@@ -27,11 +27,7 @@ on:
                 description: "The database to run the test on"
                 type: string
                 required: false
-<<<<<<< HEAD
-                default: '["IoTDB12", "InfluxDB", "FileSystem", "PostgreSQL", "Redis", "MongoDB", "MySQL", "dameng"]'
-=======
-                default: '["IoTDB12", "InfluxDB", "FileSystem", "PostgreSQL", "Redis", "MongoDB", "MySQL", "Oracle"]'
->>>>>>> lin/add-dm-datasource-0121
+                default: '["IoTDB12", "InfluxDB", "FileSystem", "PostgreSQL", "Redis", "MongoDB", "MySQL", "Oracle", "dameng"]'
             timeout-minutes:
                 description: "The timeout minutes for the job"
                 type: number
