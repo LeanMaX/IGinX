@@ -179,6 +179,8 @@ runs:
               -Dversion=1.0 ^
               -Dpackaging=jar ^
               -Dfile=DmJdbcDriver8.jar
+
+        - if: runner.os == 'Linux' || runner.os == 'macOS'
           name: Download and Install Oracle JDBC Driver
           shell: bash
           run: |
