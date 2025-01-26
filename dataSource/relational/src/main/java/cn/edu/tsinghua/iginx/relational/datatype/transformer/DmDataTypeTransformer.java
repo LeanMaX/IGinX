@@ -21,51 +21,60 @@ package cn.edu.tsinghua.iginx.relational.datatype.transformer;
 
 import static cn.edu.tsinghua.iginx.thrift.DataType.*;
 
+import cn.edu.tsinghua.iginx.relational.query.entity.RelationQueryRowStream;
 import cn.edu.tsinghua.iginx.thrift.DataType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class PostgreSQLDataTypeTransformer implements IDataTypeTransformer {
+public class DmDataTypeTransformer implements IDataTypeTransformer {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RelationQueryRowStream.class);
+  private static final DmDataTypeTransformer INSTANCE = new DmDataTypeTransformer();
 
-  private static final PostgreSQLDataTypeTransformer INSTANCE = new PostgreSQLDataTypeTransformer();
-
-  public static PostgreSQLDataTypeTransformer getInstance() {
+  public static DmDataTypeTransformer getInstance() {
     return INSTANCE;
   }
 
+  @Override
   public DataType fromEngineType(String dataType, String... parameters) {
-    if (dataType.equalsIgnoreCase("bool")) {
+    if (dataType.equalsIgnoreCase("BYTE") || dataType.equalsIgnoreCase("TINYINT")) {
       return BOOLEAN;
-    } else if (dataType.equalsIgnoreCase("int")
-        || dataType.equalsIgnoreCase("int2")
-        || dataType.equalsIgnoreCase("int4")
-        || dataType.equalsIgnoreCase("serial2")
-        || dataType.equalsIgnoreCase("serial4")) {
-      return INTEGER;
-    } else if (dataType.equalsIgnoreCase("int8") || dataType.equalsIgnoreCase("serial8")) {
+    } else if (dataType.equalsIgnoreCase("BIGINT")) {
       return LONG;
-    } else if (dataType.equalsIgnoreCase(("float4"))) {
-      return FLOAT;
-    } else if (dataType.equalsIgnoreCase("decimal") || dataType.equalsIgnoreCase("float8")) {
+    } else if (dataType.equalsIgnoreCase("INT")
+        || dataType.equalsIgnoreCase("SMALLINT")
+        || dataType.equalsIgnoreCase("NUMERIC")) {
+      return INTEGER;
+    } else if (dataType.equalsIgnoreCase("FLOAT")) { // from getColumns api
       return DOUBLE;
-    } else {
+    } else if (dataType.equalsIgnoreCase("DOUBLE")) {
+      return DOUBLE;
+    } else if (dataType.equalsIgnoreCase("VARCHAR")
+        || dataType.equalsIgnoreCase("CHAR")
+        || dataType.equalsIgnoreCase("NCHAR")
+        || dataType.equalsIgnoreCase("NVARCHAR")
+        || dataType.equalsIgnoreCase("TEXT")) {
       return BINARY;
+    } else {
+      LOGGER.error("column type {} is not supported", dataType);
     }
+    return null;
   }
 
   public String toEngineType(DataType dataType) {
     switch (dataType) {
       case BOOLEAN:
-        return "BOOLEAN";
+        return "TINYINT";
       case INTEGER:
-        return "INTEGER";
+        return "INT";
       case LONG:
         return "BIGINT";
       case FLOAT:
-        return "REAL";
+        return "FLOAT";
       case DOUBLE:
         return "DOUBLE PRECISION";
       case BINARY:
       default:
-        return "TEXT";
+        return "VARCHAR(4000)";
     }
   }
 }
