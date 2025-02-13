@@ -58,11 +58,11 @@ public class RequestContext {
 
   private PhysicalTask physicalTree;
 
-  private ByteBuffer loadCSVFileByteBuffer;
+  private String loadCSVFileName;
 
   private ByteBuffer UDFModuleByteBuffer;
 
-  private boolean isRemoteUDF;
+  private boolean isRemoteSession;
 
   private String warningMsg;
 
