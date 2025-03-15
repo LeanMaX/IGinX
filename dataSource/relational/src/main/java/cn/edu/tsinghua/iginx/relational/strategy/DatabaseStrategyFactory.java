@@ -17,13 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package cn.edu.tsinghua.iginx.relational.datatype.transformer;
+package cn.edu.tsinghua.iginx.relational.strategy;
 
-import cn.edu.tsinghua.iginx.thrift.DataType;
+public class DatabaseStrategyFactory {
+  public static DatabaseStrategy getStrategy(String engineName) {
+    if (engineName == null) {
+      return new DefaultDatabaseStrategy();
+    }
 
-public interface IDataTypeTransformer {
-
-  public DataType fromEngineType(String dataType, String... parameters);
-
-  public String toEngineType(DataType dataType);
+    switch (engineName.toLowerCase()) {
+      case "dameng":
+        return new DamengDatabaseStrategy();
+      case "mysql":
+        return new MySQLDatabaseStrategy();
+      default:
+        return new DefaultDatabaseStrategy();
+    }
+  }
 }
