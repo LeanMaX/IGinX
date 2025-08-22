@@ -41,10 +41,9 @@ import cn.edu.tsinghua.iginx.relational.meta.JDBCMeta;
 import cn.edu.tsinghua.iginx.relational.tools.RelationSchema;
 import cn.edu.tsinghua.iginx.thrift.DataType;
 import cn.edu.tsinghua.iginx.utils.Pair;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.io.IOException;
+import java.io.Reader;
+import java.sql.*;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +70,7 @@ public class RelationQueryRowStream implements RowStream {
 
   private int[] resultSetSizes; // 记录每个结果集的列数
 
-  private Map<Field, String> fieldToColumnName; // 记录匹配 tagFilter 的列名
+  private Map<Field, Pair<String, String>> fieldToPhysicalPathAndColumnName; // 记录匹配 tagFilter 的列名
 
   private Row cachedRow;
 
@@ -147,7 +146,7 @@ public class RelationQueryRowStream implements RowStream {
     Field key = null;
     List<Field> fields = new ArrayList<>();
     this.resultSetSizes = new int[resultSets.size()];
-    this.fieldToColumnName = new HashMap<>();
+    this.fieldToPhysicalPathAndColumnName = new HashMap<>();
     this.resultSetHasColumnWithTheSameName = new ArrayList<>();
 
     needFilter = (!isAgg && resultSets.size() != 1) || isDummy;
@@ -163,7 +162,7 @@ public class RelationQueryRowStream implements RowStream {
 
       int cnt = 0;
       for (int j = 1; j <= resultSetMetaData.getColumnCount(); j++) {
-        String tableName = resultSetMetaData.getTableName(j);
+        String physicalTableName = resultSetMetaData.getTableName(j);
         String columnName = resultSetMetaData.getColumnLabel(j);
         String columnType = resultSetMetaData.getColumnTypeName(j);
         int precision = resultSetMetaData.getPrecision(j);
@@ -177,7 +176,7 @@ public class RelationQueryRowStream implements RowStream {
           System.out.println(columnName);
           RelationSchema relationSchema =
               new RelationSchema(columnName, isDummy, relationalMeta.getQuote());
-          tableName = relationSchema.getTableName();
+          physicalTableName = relationSchema.getTableName();
           columnName = relationSchema.getColumnName();
         }
 
@@ -199,22 +198,37 @@ public class RelationQueryRowStream implements RowStream {
         }
         String databaseName = databaseNameList.get(i);
         String path;
+        String physicalPath;
         if (isDummy) {
+          // For dummy mode, include database name in path
           path =
               databaseName
                   + SEPARATOR
                   + (isAgg || !relationalMeta.jdbcSupportGetTableNameFromResultSet()
                       ? ""
-                      : tableName + SEPARATOR)
+                      : physicalTableName + SEPARATOR)
                   + namesAndTags.k;
+          physicalPath = path;
         } else {
-          path =
-              (isAgg || !relationalMeta.jdbcSupportGetTableNameFromResultSet()
-                      ? ""
-                      : tableName + SEPARATOR)
-                  + namesAndTags.k;
+          // For non-dummy mode, handle logical table name remapping
+          if (isAgg || !relationalMeta.jdbcSupportGetTableNameFromResultSet()) {
+            String fullColumnName = namesAndTags.k;
+            // 可能存在重命名后带有物理表名的列名，需要进行处理（转换为逻辑表名拼接），否则后续sort无法找到对应的列
+            RelationSchema schema =
+                new RelationSchema(namesAndTags.k, isDummy, relationalMeta.getQuote());
+            if (!schema.getTableName().isEmpty()) {
+              fullColumnName =
+                  getLogicalTableName(schema.getTableName()) + SEPARATOR + schema.getColumnName();
+            }
+            path = fullColumnName;
+            physicalPath = fullColumnName;
+          } else {
+            path = getLogicalTableName(physicalTableName) + SEPARATOR + namesAndTags.k;
+            physicalPath = physicalTableName + SEPARATOR + namesAndTags.k;
+          }
           if (!isAgg && !relationalMeta.supportCreateDatabase()) {
             path = path.substring(databaseName.length() + 1);
+            physicalPath = physicalPath.substring(databaseName.length() + 1);
           }
         }
 
@@ -227,7 +241,7 @@ public class RelationQueryRowStream implements RowStream {
         if (filterByTags && !TagKVUtils.match(namesAndTags.v, tagFilter)) {
           continue;
         }
-        fieldToColumnName.put(field, columnName);
+        fieldToPhysicalPathAndColumnName.put(field, new Pair(physicalPath, columnName));
         fields.add(field);
         cnt++;
       }
@@ -329,17 +343,23 @@ public class RelationQueryRowStream implements RowStream {
             Set<String> tableNameSet = new HashSet<>();
 
             for (int j = 0; j < resultSetSizes[i]; j++) {
-              String columnName = fieldToColumnName.get(header.getField(startIndex + j));
+              Pair<String, String> physicalTableAndColumnName =
+                  fieldToPhysicalPathAndColumnName.get(header.getField(startIndex + j));
+              String columnName = physicalTableAndColumnName.v;
+              String physicalPath = physicalTableAndColumnName.k;
               RelationSchema schema =
-                  new RelationSchema(
-                      header.getField(startIndex + j).getName(),
-                      isDummy,
-                      relationalMeta.getQuote());
-              String tableName = schema.getTableName();
+                  new RelationSchema(physicalPath, isDummy, relationalMeta.getQuote());
+              String physicalTableName = schema.getTableName();
 
-              tableNameSet.add(tableName);
+              tableNameSet.add(physicalTableName);
 
-              Object value = getResultSetObject(resultSet, columnName, tableName);
+              Object value = null;
+              try {
+                // 使用物理表去检索
+                value = getResultSetObject(resultSet, columnName, physicalTableName);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
               DataType type = header.getField(startIndex + j).getType();
               cachedValues[startIndex + j] = convertToIginxValue(value, type);
             }
@@ -426,34 +446,86 @@ public class RelationQueryRowStream implements RowStream {
         throw new IllegalArgumentException("Unsupported data type: " + type);
     }
   }
+  /**
+   * Remove numeric suffix from a physical table name to get the logical table name.
+   *
+   * <p>This method takes a physical table name as input and returns the logical table name by
+   * removing the numeric suffix from the physical table name. For example, if the input physical
+   * table name is "table_1", the returned logical table name is "table".
+   *
+   * <p>If the input physical table name does not have a numeric suffix, the method returns the
+   * original name.
+   *
+   * @param physicalTableName the physical table name
+   * @return the logical table name
+   */
+  private String getLogicalTableName(String physicalTableName) {
+    if (physicalTableName == null || physicalTableName.isEmpty()) {
+      return physicalTableName;
+    }
+
+    // 找到最后一个分隔符的位置
+    int lastUnderlineIndex = physicalTableName.lastIndexOf(TABLE_SUFFIX_DELIMITER);
+    if (lastUnderlineIndex >= 0 && lastUnderlineIndex < physicalTableName.length() - 1) {
+      // 检查下划线后面的部分是否是纯数字
+      String suffix = physicalTableName.substring(lastUnderlineIndex + 1);
+      if (suffix.matches("\\d+")) {
+        // 确认是物理表名格式（table_数字），返回逻辑表名
+        return physicalTableName.substring(0, lastUnderlineIndex);
+      }
+    }
+
+    // 如果不符合物理表名格式，直接返回原名（可能本身就是逻辑表名）
+    return physicalTableName;
+  }
 
   /**
    * 从结果集中获取指定column、指定table的值 不用resultSet.getObject(String
    * columnLabel)是因为：在pg的filter下推中，可能会存在column名字相同，但是table不同的情况 这时候用resultSet.getObject(String
    * columnLabel)就只能取到第一个column的值
    */
-  private Object getResultSetObject(ResultSet resultSet, String columnName, String tableName)
-      throws SQLException {
+  private Object getResultSetObject(ResultSet rs, String columnName, String tableName)
+      throws SQLException, IOException {
+    Object obj;
     if (!relationalMeta.isSupportFullJoin() && isPushDown) {
-      return resultSet.getObject(tableName + SEPARATOR + columnName);
+      obj = rs.getObject(tableName + SEPARATOR + columnName);
+    } else if (!resultSetHasColumnWithTheSameName.get(resultSets.indexOf(rs))) {
+      obj = rs.getObject(columnName);
+    } else {
+      ResultSetMetaData meta = rs.getMetaData();
+      obj = null;
+      for (int j = 1; j <= meta.getColumnCount(); j++) {
+        String tempColumnName = meta.getColumnLabel(j);
+        String tempTableName;
+        tempTableName = meta.getTableName(j);
+        if (!relationalMeta.supportCreateDatabase()) {
+          int idx = tempTableName.indexOf(SEPARATOR);
+          tempTableName = tempTableName.substring(idx + 1);
+        }
+        if (tempColumnName.equals(columnName)
+            && (tempTableName.isEmpty() || tempTableName.equals(tableName))) {
+          obj = rs.getObject(j);
+          break;
+        }
+      }
     }
 
-    if (!resultSetHasColumnWithTheSameName.get(resultSets.indexOf(resultSet))) {
-      return resultSet.getObject(columnName);
-    }
-    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-    for (int j = 1; j <= resultSetMetaData.getColumnCount(); j++) {
-      String tempColumnName = resultSetMetaData.getColumnLabel(j);
-      String tempTableName = resultSetMetaData.getTableName(j);
-      if (!relationalMeta.supportCreateDatabase()) {
-        int firstSeparatorIndex = tempTableName.indexOf(SEPARATOR);
-        tempTableName = tempTableName.substring(firstSeparatorIndex + 1);
+    // 如果是 CLOB 类型，统一读取内容
+    if (obj instanceof Clob) {
+      Clob clob = (Clob) obj;
+      StringBuilder sb = new StringBuilder();
+      try (Reader reader = clob.getCharacterStream()) {
+        char[] buffer = new char[2048];
+        int len;
+        while ((len = reader.read(buffer)) != -1) {
+          sb.append(buffer, 0, len);
+        }
+      } catch (IOException e) {
+        throw new SQLException("Failed to read CLOB content", e);
       }
-      if (tempColumnName.equals(columnName)
-          && (tempTableName.isEmpty() || tempTableName.equals(tableName))) {
-        return resultSet.getObject(j);
-      }
+      return sb.toString();
     }
-    return null;
+
+    return obj;
   }
 }
