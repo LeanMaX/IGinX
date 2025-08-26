@@ -22,10 +22,12 @@ jobs:
     standalone-test:
         uses: ./.github/workflows/standalone-test.yml
         with:
+            os-matrix: '["windows-latest"]'
             metadata-matrix: '["zookeeper"]'
     standalone-test-no-optimizer:
         uses: ./.github/workflows/standalone-test-no-optimizer.yml
         with:
+            os-matrix: '["windows-latest"]'
             metadata-matrix: '["zookeeper"]'
     db-ce:
         uses: ./.github/workflows/DB-CE.yml
