@@ -79,7 +79,7 @@ runs:
           run: |
               echo "pandas" >> requirements.txt
               echo "numpy" >> requirements.txt
-              echo "pemjax" >> requirements.txt
+              echo "pemjax==0.2.2" >> requirements.txt
               echo "thrift" >> requirements.txt
               echo "fastparquet" >> requirements.txt
               echo "tqdm" >> requirements.txt
@@ -115,7 +115,6 @@ runs:
               which python
               python -m pip install --upgrade pip
               pip install -r requirements.txt
-              python -c "import torch; print('torch loaded from:', torch.__file__)"
 
         - if: inputs.free-thread-python-required=='true'
           name: Install free-thread python
