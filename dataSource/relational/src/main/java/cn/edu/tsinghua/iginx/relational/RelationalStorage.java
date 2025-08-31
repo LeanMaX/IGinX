@@ -2706,7 +2706,6 @@ public class RelationalStorage implements IStorage {
       String tableName,
       List<Pair<String, DataType>> columnList,
       List<Integer> columnIndexList,
-      Map<String, Map<String, String>> columnToPhysicalTableMap,
       Statement stmt)
       throws SQLException {
     for (int i = 1; i < columnIndexList.size(); i++) {
@@ -2714,10 +2713,6 @@ public class RelationalStorage implements IStorage {
           columnList.subList(columnIndexList.get(i - 1), columnIndexList.get(i));
       // 拼接物理表名，比如 tableName_1, tableName_2 ...
       String physicalTableName = tableName + TABLE_SUFFIX_DELIMITER + tableIndex;
-      subColumns.forEach(
-          column -> {
-            columnToPhysicalTableMap.get(tableName).put(column.k, physicalTableName);
-          });
       executeCreateTable(
           reshapeTableNameBeforeQuery(physicalTableName, databaseName), subColumns, stmt);
       tableIndex++;
@@ -2730,7 +2725,6 @@ public class RelationalStorage implements IStorage {
       int lastTableIndex,
       List<Pair<String, DataType>> columnList,
       List<Integer> columnIndexList,
-      Map<String, Map<String, String>> columnToPhysicalTableMap,
       Statement stmt)
       throws SQLException {
     for (int i = 0; i < columnIndexList.get(1); i++) {
@@ -2738,7 +2732,6 @@ public class RelationalStorage implements IStorage {
       String columnName = column.k;
       DataType dataType = column.v;
       String lastTableName = tableName + TABLE_SUFFIX_DELIMITER + lastTableIndex;
-      columnToPhysicalTableMap.get(tableName).put(columnName, lastTableName);
       // 列不存在，添加列
       String statement =
           String.format(
@@ -2758,46 +2751,27 @@ public class RelationalStorage implements IStorage {
           tableName,
           columnList,
           columnIndexList.subList(1, columnIndexList.size()),
-          columnToPhysicalTableMap,
           stmt);
     }
   }
 
-  private Map<String, Map<String, String>> createOrAlterTables(
+  private void createOrAlterTables(
       Connection conn,
       String databseName,
       List<String> paths,
       List<Map<String, String>> tagsList,
       List<DataType> dataTypeList) {
-    // 对每个路径，重构为<tableName, LinkedHashSet<Pair<String, DataType> columns>>的形式
-    Map<String, List<Pair<String, DataType>>> tableToColumns = new ConcurrentHashMap<>();
-    // 建立已有逻辑表到列名和物理表的映射
-    Map<String, Map<String, String>> columnToPhysicalTableMap = new ConcurrentHashMap<>();
-    Set<String> logicalTableNames = ConcurrentHashMap.newKeySet();
-    paths
-        .parallelStream()
-        .forEach(
-            path -> {
-              RelationSchema schema = new RelationSchema(path, relationalMeta.getQuote());
-              String logicalTableName = schema.getTableName();
-              // 用 concurrent set 做去重
-              if (logicalTableNames.add(logicalTableName)) {
-                List<String> physicalTableNames = getPhysicalTables(databseName, logicalTableName);
-                physicalTableNames
-                    .parallelStream()
-                    .forEach(
-                        physicalTableName -> {
-                          getColumns(databseName, physicalTableName, "%", false)
-                              .forEach(
-                                  column -> {
-                                    columnToPhysicalTableMap
-                                        .computeIfAbsent(
-                                            logicalTableName, k -> new ConcurrentHashMap<>())
-                                        .put(column.getColumnName(), physicalTableName);
-                                  });
-                        });
-              }
-            });
+    // 对每个路径，重构为<tableName, List<Pair<String, DataType> columns>>的形式
+    Map<String, List<Pair<String, DataType>>> tableToColumns = new HashMap<>();
+    // 得到已有的所有列
+    Set<String> existedColumns =
+        getColumns(databseName, "%", "%", false).stream()
+            .map(
+                columnField ->
+                    getLogicalTableName(columnField.getTableName())
+                        + SEPARATOR
+                        + columnField.getColumnName())
+            .collect(Collectors.toSet());
 
     for (int i = 0; i < paths.size(); i++) {
       String path = paths.get(i);
@@ -2810,8 +2784,8 @@ public class RelationalStorage implements IStorage {
       String tableName = schema.getTableName();
       String columnName = schema.getColumnName();
       columnName = toFullName(columnName, tags);
-      if (columnToPhysicalTableMap.containsKey(tableName)
-          && columnToPhysicalTableMap.get(tableName).containsKey(columnName)) {
+      String fullColumnName = tableName + SEPARATOR + columnName;
+      if (existedColumns.contains(fullColumnName)) {
         continue;
       }
       tableToColumns
@@ -2826,30 +2800,18 @@ public class RelationalStorage implements IStorage {
       }
       try {
         Statement stmt = conn.createStatement();
-        Map<String, String> columnToPhysicalTable = columnToPhysicalTableMap.get(tableName);
+        List<String> physicalTables = getPhysicalTables(databseName, tableName);
         List<Integer> columnIndexList = new ArrayList<>();
-        if (columnToPhysicalTable == null) {
+        if (physicalTables.isEmpty()) {
           // 没有表，创建表
           // 循环建表，每张表至多max_column_limit列
           int startIndex = 1;
           columnIndexList = splitColumns(0, 0, columns);
-          columnToPhysicalTableMap.putIfAbsent(tableName, new HashMap<>());
-          createTable(
-              startIndex,
-              databseName,
-              tableName,
-              columns,
-              columnIndexList,
-              columnToPhysicalTableMap,
-              stmt);
+          createTable(startIndex, databseName, tableName, columns, columnIndexList, stmt);
         } else {
           // 对columnToPhysicalTable的value去重
-          List<String> physicalTables =
-              new ArrayList<>(columnToPhysicalTable.values())
-                  .stream().distinct().collect(Collectors.toList());
-          // 表已存在，找到最后一个表名
           int lastTableIndex = physicalTables.size();
-          String lastTableName = tableName + TABLE_SUFFIX_DELIMITER + lastTableIndex;
+          String lastTableName = physicalTables.get(lastTableIndex - 1);
           // 最后一个table的列
           List<ColumnField> lastTableColumns = getColumns(databseName, lastTableName, "%", false);
           // 最后一个table的列总大小、列数
@@ -2871,20 +2833,13 @@ public class RelationalStorage implements IStorage {
           columnIndexList = splitColumns(existedColumnCount, existedRowSize, columns);
           // 循环添加列，每张表至多max_column_limit列，并且累计列的大小不超过max_single_row_size
           alterTableAddColumn(
-              databseName,
-              tableName,
-              lastTableIndex,
-              columns,
-              columnIndexList,
-              columnToPhysicalTableMap,
-              stmt);
+              databseName, tableName, lastTableIndex, columns, columnIndexList, stmt);
         }
         stmt.close();
       } catch (SQLException e) {
         LOGGER.error("create or alter table {} error: ", tableName, e);
       }
     }
-    return columnToPhysicalTableMap;
   }
 
   private Exception insertNonAlignedRowRecords(
@@ -2894,13 +2849,16 @@ public class RelationalStorage implements IStorage {
       Statement stmt = conn.createStatement();
 
       // 创建表，同时建立逻辑表到列名和物理表的映射
-      Map<String, Map<String, String>> logicalToPhysicalTableMapForColumn =
-          createOrAlterTables(
-              conn, databaseName, data.getPaths(), data.getTagsList(), data.getDataTypeList());
+      createOrAlterTables(
+          conn, databaseName, data.getPaths(), data.getTagsList(), data.getDataTypeList());
 
       // 插入数据
       Map<String, Pair<String, List<String>>> tableToColumnEntries =
           new HashMap<>(); // <表名, <列名，值列表>>
+
+      // 建立逻辑表到列名和物理表的映射
+      Map<String, Map<String, String>> logicalToPhysicalTableMapForColumn =
+          buildLogicalToPhysicalTableMapForColumn(databaseName, data.getPaths());
 
       int cnt = 0;
       boolean firstRound = true;
@@ -3016,13 +2974,16 @@ public class RelationalStorage implements IStorage {
       Statement stmt = conn.createStatement();
 
       // 创建表，同时建立逻辑表到列名和物理表的映射
-      Map<String, Map<String, String>> logicalToPhysicalTableMapForColumn =
-          createOrAlterTables(
-              conn, databaseName, data.getPaths(), data.getTagsList(), data.getDataTypeList());
+      createOrAlterTables(
+          conn, databaseName, data.getPaths(), data.getTagsList(), data.getDataTypeList());
 
       // 插入数据
       Map<String, Pair<String, List<String>>> tableToColumnEntries =
           new HashMap<>(); // <物理表名, <列名，值列表>>
+
+      // 建立逻辑表到列名和物理表的映射
+      Map<String, Map<String, String>> logicalToPhysicalTableMapForColumn =
+          buildLogicalToPhysicalTableMapForColumn(databaseName, data.getPaths());
 
       Map<Integer, Integer> pathIndexToBitmapIndex = new HashMap<>();
       int cnt = 0;
@@ -3482,5 +3443,45 @@ public class RelationalStorage implements IStorage {
 
     // 如果不符合物理表名格式，直接返回原名（可能本身就是逻辑表名）
     return physicalTableName;
+  }
+
+  /** 建立逻辑表名到物理表名列表的映射 */
+  private Map<String, List<String>> buildLogicalToPhysicalTableMap(
+      String databaseName, List<String> paths) {
+    Map<String, List<String>> logicalToPhysicalMap = new HashMap<>();
+
+    Set<String> logicalTableNames =
+        paths.stream()
+            .map(path -> new RelationSchema(path, relationalMeta.getQuote()).getTableName())
+            .collect(Collectors.toSet());
+
+    for (String logicalTableName : logicalTableNames) {
+      List<String> physicalTables = getPhysicalTables(databaseName, logicalTableName);
+      logicalToPhysicalMap.put(logicalTableName, physicalTables);
+    }
+
+    return logicalToPhysicalMap;
+  }
+
+  /** 建立列名到物理表名的映射 */
+  private Map<String, Map<String, String>> buildLogicalToPhysicalTableMapForColumn(
+      String databaseName, List<String> paths) {
+    Map<String, Map<String, String>> columnToPhysicalTableMap = new HashMap<>();
+    Map<String, List<String>> logicalToPhysicalTableMap =
+        buildLogicalToPhysicalTableMap(databaseName, paths);
+    for (Map.Entry<String, List<String>> entry : logicalToPhysicalTableMap.entrySet()) {
+      String logicalTableName = entry.getKey();
+      List<String> physicalTables = entry.getValue();
+      columnToPhysicalTableMap.putIfAbsent(logicalTableName, new HashMap<>());
+      for (String physicalTableName : physicalTables) {
+        List<ColumnField> columns = getColumns(databaseName, physicalTableName, "%", false);
+        columns.forEach(
+            column ->
+                columnToPhysicalTableMap
+                    .get(logicalTableName)
+                    .put(column.getColumnName(), physicalTableName));
+      }
+    }
+    return columnToPhysicalTableMap;
   }
 }
