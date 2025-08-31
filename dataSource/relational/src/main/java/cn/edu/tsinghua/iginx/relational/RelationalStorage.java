@@ -2950,7 +2950,6 @@ public class RelationalStorage implements IStorage {
               }
               index++;
 
-              // 简化成一行
               tableHasData.computeIfAbsent(physicalTableName, k -> new boolean[size])[i - cnt] =
                   true;
             }
