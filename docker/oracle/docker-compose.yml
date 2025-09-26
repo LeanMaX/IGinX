@@ -32,4 +32,4 @@ services:
       ORACLE_PDB: ORCLPDB
       ORACLE_PWD: ORCLPWD
     volumes:
-      - "/volumes/oracle23:/opt/oracle/oradata"
+      - "./volumes/oracle23:/opt/oracle/oradata"
