@@ -16,16 +16,12 @@ runs:
       working-directory: ${{ github.workspace }}
       run: |
         for port in ${{ inputs.ports }}; do
-          mkdir -p $port
-          mkdir -p volumes$port
-          mkdir -p volumes$port/oracle23
-          sudo chown -R $(whoami) $port/
-          sudo chown -R 54321:54321 volumes$port/oracle23
-          sudo chmod -R 777 volumes$port/oracle23
-          cp -f docker/oracle/docker-compose.yml $port/docker-compose-$port.yml
-          sed -i"" -e "s/1521:1521/$port:1521/g" $port/docker-compose-$port.yml
-          sed -i"" -e "s/\/volumes/\/volumes$port/g" $port/docker-compose-$port.yml
-          sed -i"" -e "s/container_name: oracle23/container_name: ${{ inputs.version }}-$port/g" $port/docker-compose-$port.yml
+          mkdir -p $port/volumes/oracle23
+          sudo chmod -R 777 $port/volumes/oracle23
+          cp -f docker/oracle/docker-compose.yml $port/docker-compose.yml
+          sed -i"" -e "s/1521:1521/$port:1521/g" $port/docker-compose.yml
+          sed -i"" -e "s/\/volumes/.\/volumes/g" $port/docker-compose.yml
+          sed -i"" -e "s/container_name: oracle23/container_name: ${{ inputs.version }}-$port/g" $port/docker-compose.yml
         done
         echo "docker-compose.yml created successfully"
 
@@ -34,7 +30,7 @@ runs:
       shell: bash
       run: |
         for port in ${{ inputs.ports }}; do
-          sudo nohup docker compose -f $port/docker-compose-$port.yml up -d
+          sudo docker compose -f $port/docker-compose.yml up -d
         done
         sleep 10
         docker ps -a
@@ -63,7 +59,7 @@ runs:
       shell: wsl-bash {0}
       run: |
         for port in ${{ inputs.ports }}; do
-          sudo nohup docker compose -f $port/docker-compose-$port.yml up -d
+          sudo docker compose -f $port/docker-compose.yml up -d
         done
         sleep 30
         docker ps -a
