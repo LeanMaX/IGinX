@@ -30,7 +30,7 @@ runs:
       shell: bash
       run: |
         for port in ${{ inputs.ports }}; do
-          sudo docker compose -f $port/docker-compose.yml up -d
+          sudo docker compose -f $port/docker-compose.yml up
         done
         sleep 10
         docker ps -a
@@ -59,7 +59,7 @@ runs:
       shell: wsl-bash {0}
       run: |
         for port in ${{ inputs.ports }}; do
-          sudo docker compose -f $port/docker-compose.yml up -d
+          sudo docker compose -f $port/docker-compose.yml up
         done
         sleep 30
         docker ps -a
