@@ -11,13 +11,37 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Create Config for dameng docker compose
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        for port in ${{ inputs.ports }}; do
+          mkdir -p $port/volumes/oradata
+          sudo chmod -R 777 $port/volumes/oradata
+          cp -f docker/oracle/docker-compose.yml $port/docker-compose.yml
+          sed -i"" -e "s/1521:1521/$port:1521/g" $port/docker-compose.yml
+          sed -i"" -e "s/container_name: oracle23/container_name: ${{ inputs.version }}-$port/g" $port/docker-compose.yml
+          df -h $port/volumes/oradata
+        done
+        echo "docker-compose.yml created successfully"
+
+    - name: Clean Docker space
+      shell: bash
+      run: |
+        docker system prune -af
+        docker volume prune -f
+
     - if: runner.os == 'Linux' || runner.os == 'macOS'
       name: Start Oracle container
       shell: bash
       run: |
         for port in ${{ inputs.ports }}; do
-           docker run -d --name ${{ inputs.version }}-$port -p $port:1521 -e ORACLE_PDB=ORCLPDB -e ORACLE_PWD=ORCLPWD container-registry.oracle.com/database/free:23.5.0.0-lite
+          df -h $port/volumes/oradata
+          sudo docker compose -f $port/docker-compose.yml up -d
         done
+        sleep 10
+        docker ps -a
+
     - if: runner.os == 'Linux' || runner.os == 'macOS'
       name: Verify Oracle Database is running
       id: oracleContainer
@@ -25,6 +49,7 @@ runs:
       run: |
         for port in ${{ inputs.ports }}; do
           while true; do
+            df -h $port/volumes/oradata
             log_output=$(docker logs "${{ inputs.version }}-$port" 2>&1 | grep -i "DATABASE IS READY TO USE" || true)
             if [ -z "$log_output" ]; then
               echo "oracle service not started, retry in 10 seconds..."
@@ -36,13 +61,18 @@ runs:
             fi
           done
         done
+        docker ps
+
     - if: runner.os == 'Windows'
       name: Start Oracle container
       shell: wsl-bash {0}
       run: |
         for port in ${{ inputs.ports }}; do
-           docker run -d --name "${{ inputs.version }}-$port" -p $port:1521 -e ORACLE_PDB=ORCLPDB -e ORACLE_PWD=ORCLPWD container-registry.oracle.com/database/free:23.5.0.0-lite                
+          sudo docker compose -f $port/docker-compose.yml up -d
         done
+        sleep 30
+        docker ps -a
+
     - if: runner.os == 'Windows'
       name: Verify Oracle Database is running
       id: oracleContainerWin
@@ -61,4 +91,4 @@ runs:
           fi
           done
         done
-        docker ps -a
+        docker ps
