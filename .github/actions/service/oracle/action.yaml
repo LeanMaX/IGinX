@@ -41,6 +41,7 @@ runs:
       run: |
         for port in ${{ inputs.ports }}; do
           while true; do
+            df -h $port/volumes/oradata
             log_output=$(docker logs "${{ inputs.version }}-$port" 2>&1 | grep -i "DATABASE IS READY TO USE" || true)
             if [ -z "$log_output" ]; then
               echo "oracle service not started, retry in 10 seconds..."
