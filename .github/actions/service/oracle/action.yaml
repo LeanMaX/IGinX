@@ -26,6 +26,7 @@ runs:
         echo "docker-compose.yml created successfully"
 
     - name: Clean Docker space
+      shell: bash
       run: |
         docker system prune -af
         docker volume prune -f
