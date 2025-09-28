@@ -21,14 +21,21 @@ runs:
           cp -f docker/oracle/docker-compose.yml $port/docker-compose.yml
           sed -i"" -e "s/1521:1521/$port:1521/g" $port/docker-compose.yml
           sed -i"" -e "s/container_name: oracle23/container_name: ${{ inputs.version }}-$port/g" $port/docker-compose.yml
+          df -h $port/volumes/oradata
         done
         echo "docker-compose.yml created successfully"
+
+    - name: Clean Docker space
+      run: |
+        docker system prune -af
+        docker volume prune -f
 
     - if: runner.os == 'Linux' || runner.os == 'macOS'
       name: Start Oracle container
       shell: bash
       run: |
         for port in ${{ inputs.ports }}; do
+          df -h $port/volumes/oradata
           sudo docker compose -f $port/docker-compose.yml up -d
         done
         sleep 10
