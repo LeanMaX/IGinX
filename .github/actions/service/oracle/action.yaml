@@ -16,11 +16,10 @@ runs:
       working-directory: ${{ github.workspace }}
       run: |
         for port in ${{ inputs.ports }}; do
-          mkdir -p $port/volumes/oracle23
-          sudo chmod -R 777 $port/volumes/oracle23
+          mkdir -p $port/volumes/oradata
+          sudo chmod -R 777 $port/volumes/oradata
           cp -f docker/oracle/docker-compose.yml $port/docker-compose.yml
           sed -i"" -e "s/1521:1521/$port:1521/g" $port/docker-compose.yml
-          sed -i"" -e "s/ORCLPDB/ORCLPDB_$port/g" $port/docker-compose.yml
           sed -i"" -e "s/container_name: oracle23/container_name: ${{ inputs.version }}-$port/g" $port/docker-compose.yml
         done
         echo "docker-compose.yml created successfully"
@@ -31,35 +30,29 @@ runs:
       run: |
         for port in ${{ inputs.ports }}; do
           sudo docker compose -f $port/docker-compose.yml up -d
-          # 等待数据库 ready
-          while ! docker logs "${{ inputs.version }}-$port" 2>&1 | grep -iq "DATABASE IS READY TO USE"; do
-            echo "oracle service not started, retry in 10 seconds..."
-            docker logs --tail 20 ${{ inputs.version }}-$port
-            sleep 10
-          done
-          echo "oracle service started."
         done
-#        sleep 10
-#        docker ps -a
+        sleep 10
+        docker ps -a
 
-#    - if: runner.os == 'Linux' || runner.os == 'macOS'
-#      name: Verify Oracle Database is running
-#      id: oracleContainer
-#      shell: bash
-#      run: |
-#        for port in ${{ inputs.ports }}; do
-#          while true; do
-#            log_output=$(docker logs "${{ inputs.version }}-$port" 2>&1 | grep -i "DATABASE IS READY TO USE" || true)
-#            if [ -z "$log_output" ]; then
-#              echo "oracle service not started, retry in 10 seconds..."
-#              docker logs --tail 10 ${{ inputs.version }}-$port
-#              sleep 10
-#            else
-#              echo "oracle service started."
-#              break
-#            fi
-#          done
-#        done
+    - if: runner.os == 'Linux' || runner.os == 'macOS'
+      name: Verify Oracle Database is running
+      id: oracleContainer
+      shell: bash
+      run: |
+        for port in ${{ inputs.ports }}; do
+          while true; do
+            log_output=$(docker logs "${{ inputs.version }}-$port" 2>&1 | grep -i "DATABASE IS READY TO USE" || true)
+            if [ -z "$log_output" ]; then
+              echo "oracle service not started, retry in 10 seconds..."
+              docker logs --tail 10 ${{ inputs.version }}-$port
+              sleep 10
+            else
+              echo "oracle service started."
+              break
+            fi
+          done
+        done
+        docker ps
 
     - if: runner.os == 'Windows'
       name: Start Oracle container
@@ -67,36 +60,26 @@ runs:
       run: |
         for port in ${{ inputs.ports }}; do
           sudo docker compose -f $port/docker-compose.yml up -d
-          # 等待数据库 ready
-          while ! docker logs "${{ inputs.version }}-$port" 2>&1 | grep -iq "DATABASE IS READY TO USE"; do
-            echo "oracle service not started, retry in 10 seconds..."
-            docker logs --tail 20 ${{ inputs.version }}-$port
-            sleep 10
-          done
-          echo "oracle service started."
         done
-#        for port in ${{ inputs.ports }}; do
-#          sudo docker compose -f $port/docker-compose.yml up
-#        done
-#        sleep 30
-#        docker ps -a
+        sleep 30
+        docker ps -a
 
-#    - if: runner.os == 'Windows'
-#      name: Verify Oracle Database is running
-#      id: oracleContainerWin
-#      shell: wsl-bash {0}
-#      run: |
-#        for port in ${{ inputs.ports }}; do
-#          while true; do
-#          log_output=$(docker logs "${{ inputs.version }}-$port" 2>&1 | grep -i "DATABASE IS READY TO USE" || true)
-#          if [ -z "$log_output" ]; then
-#            echo "${{ inputs.version }}-$port service not started, retry in 10 seconds..."
-#            docker logs --tail 10 ${{ inputs.version }}-$port
-#            sleep 10
-#          else
-#            echo "${{ inputs.version }}-$port service started."
-#            break
-#          fi
-#          done
-#        done
-#        docker ps -a
+    - if: runner.os == 'Windows'
+      name: Verify Oracle Database is running
+      id: oracleContainerWin
+      shell: wsl-bash {0}
+      run: |
+        for port in ${{ inputs.ports }}; do
+          while true; do
+          log_output=$(docker logs "${{ inputs.version }}-$port" 2>&1 | grep -i "DATABASE IS READY TO USE" || true)
+          if [ -z "$log_output" ]; then
+            echo "${{ inputs.version }}-$port service not started, retry in 10 seconds..."
+            docker logs --tail 10 ${{ inputs.version }}-$port
+            sleep 10
+          else
+            echo "${{ inputs.version }}-$port service started."
+            break
+          fi
+          done
+        done
+        docker ps
