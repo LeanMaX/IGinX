@@ -29,7 +29,6 @@ runs:
       shell: bash
       run: |
         for port in ${{ inputs.ports }}; do
-          rm -rf $port/volumes/oradata/*
           sudo docker compose -f $port/docker-compose.yml up -d
         done
         sleep 10

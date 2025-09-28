@@ -22,7 +22,8 @@ version: '3.5'
 
 services:
   oracle:
-    image: container-registry.oracle.com/database/free:23.5.0.0-lite
+#    image: container-registry.oracle.com/database/free:23.5.0.0-lite
+    image: container-registry.oracle.com/database/free:latest
     container_name: oracle23
     restart: always
     privileged: true
