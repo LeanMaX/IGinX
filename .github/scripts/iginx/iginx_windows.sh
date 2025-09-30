@@ -41,16 +41,19 @@ fi
 sh -c "sleep 3"
 
 log_file="iginx-$1.log"
-timeout=60
+timeout=180
 interval=2
 
 elapsed_time=0
+echo "waiting iginx start complete"
 while [ $elapsed_time -lt $timeout ]; do
   last_lines=$(tail -n 20 "$log_file")
+  echo "last_lines: $last_lines"
   if echo "$last_lines" | grep -q "IGinX is now in service......"; then
     echo "IGinX started successfully"
     exit 0
   fi
+  echo "sleep $interval seconds,waiting iginx start complete"
   sleep $interval
   elapsed_time=$((elapsed_time + interval))
 done

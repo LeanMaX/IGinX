@@ -36,6 +36,7 @@ jobs:
         with:
             metadata-matrix: '["zookeeper"]'
             close-optimizer: "true"
+            os-matrix: '["windows-latest"]'
             db-matrix: '["FileSystem"]'
 #    standalone-test-no-mac-relational:
 #        uses: ./.github/workflows/standalone-test.yml
