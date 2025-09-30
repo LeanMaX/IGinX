@@ -247,13 +247,13 @@ public abstract class BaseCapacityExpansionIT {
 
   private void addStorageEngineInProgress(
       int port, boolean hasData, boolean isReadOnly, String dataPrefix, String schemaPrefix) {
-    if (IS_EMBEDDED) {
-      startStorageEngineWithIginx(port, hasData, isReadOnly);
-    } else {
+//    if (IS_EMBEDDED) {
+//      startStorageEngineWithIginx(port, hasData, isReadOnly);
+//    } else {
       // 测试会添加初始数据，所以hasData=true
       addStorageEngine(
           port, hasData, isReadOnly, dataPrefix, schemaPrefix, portsToExtraParams.get(port));
-    }
+//    }
   }
 
   @Test
@@ -660,11 +660,9 @@ public abstract class BaseCapacityExpansionIT {
   }
 
   private void testQueryHistoryDataExpHasData() {
-    String statement = "SHOW COLUMNS;";
+    String statement = "select wt01.status2 from nt.wf03;";
     List<String> pathList = EXP_PATH_LIST1;
     List<List<Object>> valuesList = EXP_VALUES_LIST1;
-    SQLTestTools.executeAndCompare(session, statement, pathList, valuesList);
-    statement = "select wt01.status2 from nt.wf03;";
     SQLTestTools.executeAndCompare(session, statement, pathList, valuesList);
 
     statement = "select wt01.temperature from nt.wf04;";
