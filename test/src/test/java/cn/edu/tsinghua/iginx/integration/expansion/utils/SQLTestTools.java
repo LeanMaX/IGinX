@@ -146,6 +146,13 @@ public class SQLTestTools {
       SessionExecuteSqlResult res = session.executeSql(statement);
       List<String> pathList = res.getPaths();
       List<List<Object>> actualValuesList = res.getValues();
+      // 输出actualValuesList
+        for (List<Object> row : actualValuesList) {
+            for (Object val : row) {
+                System.out.print(val + " ");
+            }
+            System.out.println();
+        }
 
       assertArrayEquals(new List[] {pathListAns}, new List[] {pathList});
 

@@ -660,9 +660,11 @@ public abstract class BaseCapacityExpansionIT {
   }
 
   private void testQueryHistoryDataExpHasData() {
-    String statement = "select wt01.status2 from nt.wf03;";
+    String statement = "SHOW COLUMNS;";
     List<String> pathList = EXP_PATH_LIST1;
     List<List<Object>> valuesList = EXP_VALUES_LIST1;
+    SQLTestTools.executeAndCompare(session, statement, pathList, valuesList);
+    statement = "select wt01.status2 from nt.wf03;";
     SQLTestTools.executeAndCompare(session, statement, pathList, valuesList);
 
     statement = "select wt01.temperature from nt.wf04;";
