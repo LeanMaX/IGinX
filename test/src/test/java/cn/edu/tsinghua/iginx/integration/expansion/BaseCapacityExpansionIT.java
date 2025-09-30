@@ -247,13 +247,13 @@ public abstract class BaseCapacityExpansionIT {
 
   private void addStorageEngineInProgress(
       int port, boolean hasData, boolean isReadOnly, String dataPrefix, String schemaPrefix) {
-//    if (IS_EMBEDDED) {
-//      startStorageEngineWithIginx(port, hasData, isReadOnly);
-//    } else {
-      // 测试会添加初始数据，所以hasData=true
-      addStorageEngine(
-          port, hasData, isReadOnly, dataPrefix, schemaPrefix, portsToExtraParams.get(port));
-//    }
+    //    if (IS_EMBEDDED) {
+    //      startStorageEngineWithIginx(port, hasData, isReadOnly);
+    //    } else {
+    // 测试会添加初始数据，所以hasData=true
+    addStorageEngine(
+        port, hasData, isReadOnly, dataPrefix, schemaPrefix, portsToExtraParams.get(port));
+    //    }
   }
 
   @Test
@@ -341,6 +341,8 @@ public abstract class BaseCapacityExpansionIT {
 
     // 测试参数错误的只读节点扩容
     testInvalidEngineParams(readOnlyPort, true, true, null, READ_ONLY_SCHEMA_PREFIX);
+    // 等待删除完毕
+    Thread.sleep(100);
     // 扩容只读节点
     addStorageEngineInProgress(readOnlyPort, true, true, null, READ_ONLY_SCHEMA_PREFIX);
     // 查询扩容只读节点的历史数据，结果不为空
