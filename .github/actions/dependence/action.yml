@@ -175,3 +175,4 @@ runs:
               if [ "${{ inputs.start-single-iginx }}" == "true" ]; then
                   echo "IGINX_HOME=${PROJECT_ROOT}/core/target/iginx-core-${VERSION}" >> $GITHUB_ENV
               fi
+              df -h
