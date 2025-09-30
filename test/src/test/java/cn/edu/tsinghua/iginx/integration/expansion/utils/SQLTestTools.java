@@ -156,6 +156,28 @@ public class SQLTestTools {
     }
   }
 
+  public static void executeSQL(Session session, String statement) {
+      SessionExecuteSqlResult res = null;
+      try {
+          res = session.executeSql(statement);
+      List<String> pathList = res.getPaths();
+      List<List<Object>> actualValuesList = res.getValues();
+      // 打印actualValuesList
+      if (actualValuesList != null) {
+          for (List<Object> row : actualValuesList) {
+              for (Object val : row) {
+                  LOGGER.info("{}", val);
+              }
+              LOGGER.info("\n");
+          }
+      }
+      LOGGER.info("pathList: {}", pathList);
+      } catch (SessionException e) {
+          LOGGER.error("Statement: \"{}\" execute fail. Caused by:", statement, e);
+          fail();
+      }
+  }
+
   /** execute query and result should contain expected values for specified paths. */
   public static void executeAndContainValue(
       Session session,
