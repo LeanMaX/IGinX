@@ -247,13 +247,13 @@ public abstract class BaseCapacityExpansionIT {
 
   private void addStorageEngineInProgress(
       int port, boolean hasData, boolean isReadOnly, String dataPrefix, String schemaPrefix) {
-        if (IS_EMBEDDED) {
-          startStorageEngineWithIginx(port, hasData, isReadOnly);
-        } else {
-    // 测试会添加初始数据，所以hasData=true
-    addStorageEngine(
-        port, hasData, isReadOnly, dataPrefix, schemaPrefix, portsToExtraParams.get(port));
-        }
+    if (IS_EMBEDDED) {
+      startStorageEngineWithIginx(port, hasData, isReadOnly);
+    } else {
+      // 测试会添加初始数据，所以hasData=true
+      addStorageEngine(
+          port, hasData, isReadOnly, dataPrefix, schemaPrefix, portsToExtraParams.get(port));
+    }
   }
 
   @Test
