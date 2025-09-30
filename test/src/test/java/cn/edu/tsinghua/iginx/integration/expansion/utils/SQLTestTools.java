@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 
 import cn.edu.tsinghua.iginx.exception.SessionException;
 import cn.edu.tsinghua.iginx.integration.tool.TestUtils;
+import cn.edu.tsinghua.iginx.pool.IginxInfo;
 import cn.edu.tsinghua.iginx.session.Session;
 import cn.edu.tsinghua.iginx.session.SessionExecuteSqlResult;
 import java.io.BufferedReader;
@@ -150,6 +151,20 @@ public class SQLTestTools {
       assertArrayEquals(new List[] {pathListAns}, new List[] {pathList});
 
       compareValuesList(expectedValuesList, actualValuesList);
+    } catch (SessionException e) {
+      LOGGER.error("Statement: \"{}\" execute fail. Caused by:", statement, e);
+      fail();
+    }
+  }
+
+  public static void executeSQL(Session session, String statement) {
+    SessionExecuteSqlResult res = null;
+    try {
+      res = session.executeSql(statement);
+      List<String> pathList = res.getPaths();
+      String result = res.getResultInString(false, "");
+      LOGGER.info("result: {}", result);
+      LOGGER.info("pathList: {}", pathList);
     } catch (SessionException e) {
       LOGGER.error("Statement: \"{}\" execute fail. Caused by:", statement, e);
       fail();

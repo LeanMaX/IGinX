@@ -341,6 +341,8 @@ public abstract class BaseCapacityExpansionIT {
 
     // 测试参数错误的只读节点扩容
     testInvalidEngineParams(readOnlyPort, true, true, null, READ_ONLY_SCHEMA_PREFIX);
+    // 等待删除完毕
+    Thread.sleep(100);
     // 扩容只读节点
     addStorageEngineInProgress(readOnlyPort, true, true, null, READ_ONLY_SCHEMA_PREFIX);
     // 查询扩容只读节点的历史数据，结果不为空
@@ -660,7 +662,11 @@ public abstract class BaseCapacityExpansionIT {
   }
 
   private void testQueryHistoryDataExpHasData() {
-    String statement = "select wt01.status2 from nt.wf03;";
+    String statement = "SHOW CLUSTER INFO;";
+    SQLTestTools.executeSQL(session, statement);
+    statement = "SHOW COLUMNS;";
+    SQLTestTools.executeSQL(session, statement);
+    statement = "select wt01.status2 from nt.wf03;";
     List<String> pathList = EXP_PATH_LIST1;
     List<List<Object>> valuesList = EXP_VALUES_LIST1;
     SQLTestTools.executeAndCompare(session, statement, pathList, valuesList);
