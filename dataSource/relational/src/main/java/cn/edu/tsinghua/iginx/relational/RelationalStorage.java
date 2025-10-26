@@ -322,18 +322,9 @@ public class RelationalStorage implements IStorage {
       String colPattern;
       // non-dummy
       for (String databaseName : getDatabaseNames(false)) {
-        if ((extraParams.get("has_data") == null || extraParams.get("has_data").equals("false"))
-            && !databaseName.startsWith(DATABASE_PREFIX)) {
+        if (!databaseName.startsWith(DATABASE_PREFIX)) {
           continue;
         }
-        boolean isDummy =
-            extraParams.get("has_data") != null
-                && extraParams.get("has_data").equalsIgnoreCase("true")
-                && !databaseName.startsWith(DATABASE_PREFIX);
-        if (isDummy) {
-          continue;
-        }
-
         Map<String, String> tableAndColPattern = new HashMap<>();
 
         if (patterns != null && patterns.size() != 0) {
@@ -368,7 +359,7 @@ public class RelationalStorage implements IStorage {
                               columnField.getColumnSize(),
                               columnField.getDecimalDigits()),
                       nameAndTags.v,
-                      isDummy));
+                      false));
             }
           }
         }
@@ -377,15 +368,7 @@ public class RelationalStorage implements IStorage {
       // dummy
       Set<String> patternSet = new HashSet<>();
       for (String databaseName : getDatabaseNames(true)) {
-        if ((extraParams.get("has_data") == null || extraParams.get("has_data").equals("false"))
-            && !databaseName.startsWith(DATABASE_PREFIX)) {
-          continue;
-        }
-        boolean isDummy =
-            extraParams.get("has_data") != null
-                && extraParams.get("has_data").equalsIgnoreCase("true")
-                && !databaseName.startsWith(DATABASE_PREFIX);
-        if (!isDummy) {
+        if (databaseName.startsWith(DATABASE_PREFIX)) {
           continue;
         }
         // find pattern that match <databaseName>.* to avoid creating databases after.
