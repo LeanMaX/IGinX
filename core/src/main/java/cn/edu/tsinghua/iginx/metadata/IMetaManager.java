@@ -26,7 +26,6 @@ import cn.edu.tsinghua.iginx.metadata.hook.StorageUnitHook;
 import cn.edu.tsinghua.iginx.policy.simple.ColumnCalDO;
 import cn.edu.tsinghua.iginx.sql.statement.InsertStatement;
 import cn.edu.tsinghua.iginx.thrift.AuthType;
-import cn.edu.tsinghua.iginx.transform.pojo.TriggerDescriptor;
 import cn.edu.tsinghua.iginx.utils.Pair;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +44,9 @@ public interface IMetaManager {
 
   /** 获取与当前iginx连接的存储引擎实例的原信息 */
   List<StorageEngineMeta> getConnectStorageEngines();
+
+  /** 查询某个存储引擎是否已连接 */
+  boolean isStorageEngineInConnection(long id);
 
   List<StorageEngineMeta> getWritableStorageEngineList();
 
@@ -185,25 +187,25 @@ public interface IMetaManager {
 
   Map<Integer, Integer> getColumnsVersionMap();
 
-  boolean addTransformTask(TransformTaskMeta transformTask);
+  boolean addPyFunction(PyFunctionMeta pyFunctionMeta);
 
-  boolean updateTransformTask(TransformTaskMeta transformTask);
+  boolean updatePyFunction(PyFunctionMeta pyFunctionMeta);
 
-  boolean dropTransformTask(String name);
+  boolean dropPyFunction(String name);
 
-  TransformTaskMeta getTransformTask(String name);
+  PyFunctionMeta getPyFunction(String name);
 
-  List<TransformTaskMeta> getTransformTasks();
+  List<PyFunctionMeta> getPyFunctions();
 
-  List<TransformTaskMeta> getTransformTasksByModule(String moduleName);
+  List<PyFunctionMeta> getPyFunctionsByModule(String moduleName);
 
-  boolean storeJobTrigger(TriggerDescriptor jobTriggerDescriptor);
+  boolean storeTransformJob(TransformJobMeta jobMeta);
 
-  boolean updateJobTrigger(TriggerDescriptor jobTriggerDescriptor);
+  boolean updateTransformJob(TransformJobMeta jobMeta);
 
-  boolean dropJobTrigger(String name);
+  boolean dropTransformJob(String name);
 
-  List<TriggerDescriptor> getJobTriggers();
+  List<TransformJobMeta> getTransformJobs();
 
   void updateFragmentRequests(
       Map<FragmentMeta, Long> writeRequestsMap, Map<FragmentMeta, Long> readRequestsMap)
@@ -237,4 +239,6 @@ public interface IMetaManager {
 
   /** resolve storage engine list from config file */
   List<StorageEngineMeta> getStorageEngineListFromConf();
+
+  int setReplicaNum(int replicaNum);
 }

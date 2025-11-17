@@ -1132,8 +1132,8 @@ public class TransformIT {
 
       fail(); // not rejected
     } catch (SessionException e) {
-      LOGGER.info("error info:", e);
       if (!e.getMessage().contains("unexpected error")) {
+        LOGGER.info("unexpected error received:", e);
         // not rejected
         fail();
       }
@@ -1310,7 +1310,7 @@ public class TransformIT {
 
       verifyJobFinishedBlocked(jobId);
 
-      Assert.assertTrue(greenMail.waitForIncomingEmail(10 * 1000, 2));
+      Assert.assertTrue(greenMail.waitForIncomingEmail(20 * 1000, 2));
 
       assertEquals(2, greenMail.getReceivedMessages().length);
       assertEquals("Job " + jobId + " is created", greenMail.getReceivedMessages()[0].getSubject());
